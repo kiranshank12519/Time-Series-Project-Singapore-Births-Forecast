@@ -1,4 +1,4 @@
-# Time-Series-Project: Singapore-Births-Forecast
+# Time Series Project: Singapore Births Forecast
 Exploratory Data Analysis of Singapore Total Live Births (TLB) 
 and Total Fertility Rate (TFR) from 1960 to 2024.
 
