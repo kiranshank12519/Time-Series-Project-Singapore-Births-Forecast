@@ -1,0 +1,54 @@
+---
+title: "Singapore Birth Rate EDA"
+author: "Kiran Shankaran"
+date: "2026-03-24"
+output: html_document
+---
+
+## 1. Introduction
+
+GitHub Repository:
+https://github.com/kiranshank12519/Time-Series-Project-Singapore-Births-Forecast/tree/main
+
+This report presents an exploratory data analysis (EDA) of Singapore's 
+Total Live Births (TLB) and Total Fertility Rate (TFR) from 1960 to 2024.
+The aim is to identify the temporal features of both series, assess 
+stationarity, and propose candidate time series models for the period 
+1960 to 2012, which will later be used to forecast TLB and TFR from 
+2013 to 2024.Singapore has experienced a dramatic and sustained decline in 
+fertility since the 1960s, influenced by government population policies, 
+urbanisation,rising education levels, and economic development. These contextual 
+factors will be referenced throughout the analysis.
+
+---
+
+## 2. Data Loading and Preparation
+
+The data was sourced from the Singapore Department of Statistics via 
+data.gov.sg. It contains 65 annual observations from 1960 to 2024 for 
+two variables: Total Live Births (TLB) and Total Fertility Rate (TFR). 
+No missing values were present in the dataset.
+```{r setup, message=FALSE, warning=FALSE}
+# Load the data
+births <- read.csv("singapore_births.csv")
+
+# Rename columns
+colnames(births) <- c("Year", "TFR", "TLB")
+
+# Reverse so years go 1960 to 2024
+births <- births[nrow(births):1, ]
+rownames(births) <- NULL
+
+# Check it looks right
+head(births)
+tail(births)
+
+# Convert to time series objects
+TLB <- ts(births$TLB, start = 1960, frequency = 1)
+TFR <- ts(births$TFR, start = 1960, frequency = 1)
+
+# Training period 1960-2012 only
+TLB_train <- window(TLB, start = 1960, end = 2012)
+TFR_train <- window(TFR, start = 1960, end = 2012)
+
+```
