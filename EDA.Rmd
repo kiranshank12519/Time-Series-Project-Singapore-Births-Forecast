@@ -1,7 +1,7 @@
 ---
 title: "Singapore Birth Rate EDA"
 author: "Kiran Shankaran"
-date: "2026-03-24"
+date: "2026-03-27"
 output: html_document
 ---
 
@@ -10,23 +10,14 @@ output: html_document
 GitHub Repository:
 https://github.com/kiranshank12519/Time-Series-Project-Singapore-Births-Forecast/tree/main
 
-This report presents an exploratory data analysis (EDA) of Singapore's 
-Total Live Births (TLB) and Total Fertility Rate (TFR) from 1960 to 2024.
-The aim is to identify the temporal features of both series, assess 
-stationarity, and propose candidate time series models for the period 
-1960 to 2012, which will later be used to forecast TLB and TFR from 
-2013 to 2024.Singapore has experienced a dramatic and sustained decline in 
-fertility since the 1960s, influenced by government population policies, 
-urbanisation,rising education levels, and economic development. These contextual 
+This report presents an exploratory data analysis (EDA) of Singapore's Total Live Births (TLB) and Total Fertility Rate (TFR) from 1960 to 2024.The aim is to identify the temporal features of both series, assess stationarity, and propose candidate time series models for the period 1960 to 2012, which will later be used to forecast TLB and TFR from 2013 to 2024.Singapore has experienced a dramatic and sustained decline in fertility since the 1960s, influenced by government population policies,urbanisation,rising education levels, and economic development. These contextual 
 factors will be referenced throughout the analysis.
 
 ---
 
 ## 2. Data Loading and Preparation
 
-The data was sourced from the Singapore Department of Statistics via 
-data.gov.sg. It contains 65 annual observations from 1960 to 2024 for 
-two variables: Total Live Births (TLB) and Total Fertility Rate (TFR). 
+The data was sourced from the Singapore Department of Statistics via data.gov.sg. It contains 65 annual observations from 1960 to 2024 for two variables: Total Live Births (TLB) and Total Fertility Rate (TFR). 
 No missing values were present in the dataset.
 ```{r setup, message=FALSE, warning=FALSE}
 # Load the data
@@ -52,3 +43,90 @@ TLB_train <- window(TLB, start = 1960, end = 2012)
 TFR_train <- window(TFR, start = 1960, end = 2012)
 
 ```
+
+
+
+
+## 3. Summary Statistics
+```{r summary}
+
+# Summary statistics provide a basic numerical description of each series before visual analysis.
+# We look at the minimum, maximum, mean and quartiles to understand the overall range and central tendency of TLB and TFR over the full 1960-2024 period.
+cat("=== Total Live Births ===\n")
+summary(TLB)
+
+cat("\n=== Total Fertility Rate ===\n")
+summary(TFR)
+
+```
+TLB ranges from a maximum of 61,775 births to a minimum of, with a mean of approximately 45,000 births per year. TFR ranges from 5.76 to a minimum of 0.97, with a mean of 2.20. Both series show a wide range between their minimum and maximum values, which is consistent with a long-run declining trend rather than a stationary series fluctuating around a constant mean.
+
+## 4. Time Series Plots
+```{r plot_tlb, fig.width=10, fig.height=5}
+# Plotting the full TLB time series from 1960 to 2024.
+plot(TLB,
+     main = "Total Live Births in Singapore (1960-2024)",
+     ylab = "Total Live Births",
+     xlab = "Year")
+```
+```{r plot_tfr, fig.width=10, fig.height=5}
+plot(TFR,
+     main = "Total Fertility Rate in Singapore (1960-2024)",
+     ylab = "Total Fertility Rate (per female)",
+     xlab = "Year")
+```
+Both TLB and TFR show a clear and sustained downward trend over the entire 65-year period with no seasonality present, confirming both series are non-stationary. There are visible changes in the rate of decline at certain points in time and a brief recovery in TLB in the late 1980s, which warrant further investigation.
+
+# Literature analysis
+Literature was explored to gain an understanding of the external factors that could potentially explain the features observed in the plots. The acceleration in TLB and TFR decline visible after 1969 is consistent with the introduction of Singapore's Stop-at-Two policy, which penalised families for having more than two children and directly suppressed
+birth rates through the 1970s. The brief recovery visible in TLB around 1988-1990 aligns with the government's pro-natalist reversal in 1987, which introduced financial incentives for larger families, though this was insufficient to reverse the long-run downward trajectory.These structural breaks suggest that the underlying drivers of Singapore's fertility decline are not purely demographic. They are shaped by deliberate policy decisions and external shocks that a standard statistical model alone may not fully capture.
+
+## 6. Updated Time Series Plots
+
+The plots are now reproduced with reference lines added at the key policy events identified above, allowing the features of the series to be interpreted more precisely.
+
+```{r plot_tlb_annotated, fig.width=10, fig.height=5}
+# Reproduce the TLB plot with policy reference lines added at the years where known government interventions occurred
+
+plot(TLB,
+     main = "Total Live Births in Singapore (1960-2024)",
+     ylab = "Total Live Births",
+     xlab = "Year")
+# Adding lines to the time series
+abline(v = 1969, col = "red",       lty = 2) 
+abline(v = 1987, col = "darkgreen", lty = 2)
+abline(v = 2020, col = "orange",    lty = 2)
+
+legend("topright",
+       legend = c("Stop-at-Two policy (1969)",
+                  "Pro-natalist policy (1987)",
+                  "COVID-19 (2020)"),
+       col    = c("red", "darkgreen", "orange"),
+       lty    = 2,
+       cex    = 0.8)
+```
+```{r plot_tfr_annotated, fig.width=10, fig.height=5}
+# Reproduce the TFR plot with policy reference lines and the replacement level line
+
+plot(TFR,
+     main = "Total Fertility Rate in Singapore (1960-2024)",
+     ylab = "Total Fertility Rate (per female)",
+     xlab = "Year")
+
+abline(v = 1969, col = "red",       lty = 2)
+abline(v = 1987, col = "darkgreen", lty = 2)
+abline(v = 2020, col = "orange",    lty = 2)
+abline(h = 2.1,  col = "purple",    lty = 3)
+
+legend("topright",
+       legend = c("Stop-at-Two policy (1969)",
+                  "Pro-natalist policy (1987)",
+                  "COVID-19 (2020)",
+                  "Replacement level (2.1)"),
+       col    = c("red", "darkgreen", "orange", "purple"),
+       lty    = c(2, 2, 2, 3),
+       cex    = 0.8)
+```
+With the reference lines added, the features identified in the raw plots can now be directly linked to their likely causes. The acceleration in TLB and TFR decline after 1969 aligns precisely with the Stop-at-Two policy, the brief recovery in TLB around 1988-1990 corresponds to the pro-natalist reversal, and the sharp dip in 2020 coincides with the COVID-19 pandemic. These annotated plots will serve as the basis for the temporal feature analysis that follows.
+
+# Literature on forecasting births
