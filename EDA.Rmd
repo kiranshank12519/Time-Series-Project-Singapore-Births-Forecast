@@ -130,3 +130,94 @@ legend("topright",
 With the reference lines added, the features identified in the raw plots can now be directly linked to their likely causes. The acceleration in TLB and TFR decline after 1969 aligns precisely with the Stop-at-Two policy, the brief recovery in TLB around 1988-1990 corresponds to the pro-natalist reversal, and the sharp dip in 2020 coincides with the COVID-19 pandemic. These annotated plots will serve as the basis for the temporal feature analysis that follows.
 
 # Literature on forecasting births
+## 3. Literature Review
+
+To gain an understanding of how others have modelled and forecasted birth rates, a review of recent literature was carried out. He (2023) applied ARIMA models to 74 years of Chinese birth rate data and found ARIMA(0,1,2) to be the best fitting model based on AIC, with first-order differencing sufficient to achieve stationarity. Similarly, a study of Philippine birth data (European Journal of IT and Computer Science, 2025) found that ARIMA-class models outperformed other methods for forecasting declining annual birth rates in a Southeast Asian context directly comparable to Singapore.
+
+From this literature, it can be gathered that ARIMA models with d = 1 are a reasonable starting point for data of this kind, with the AR and MA orders to be identified from the ACF and PACF of the differenced series. However, as noted in the course notes, standard ARIMA models may struggle to capture structural breaks caused by external interventions. Singapore's Stop-at-Two policy (1969) and pro-natalist reversal (1987) represent exactly this kind of disruption, meaning the final model choice may need to be justified on contextual grounds as well as purely statistical ones.
+
+## 5. Temporal Feature Analysis
+
+### 5.1 ACF and PACF of Raw Series
+```{r acf_tlb, fig.width=10, fig.height=4}
+# The ACF (correlogram) plots the autocorrelation at each lag. As noted in the course notes, if there is a trend the ACF will decrease slowly and remain significant across many lags, indicating non-stationarity.
+
+acf(TLB, lag.max = 20,
+    main = "ACF of Total Live Births (1960-2024)")
+```
+```{r pacf_tlb, fig.width=10, fig.height=4}
+# The PACF plots the partial autocorrelation at each lag — the correlation between x_t and x_{t-k} after removing the effect of all intermediate lags.A dominant spike at lag 1 in the PACF suggests an AR(1) component may be present once the trend is removed.
+
+pacf(TLB, lag.max = 20,
+     main = "PACF of Total Live Births (1960-2024)")
+```
+```{r acf_tfr, fig.width=10, fig.height=4}
+# ACF of TFR — we expect a similar slowly decaying pattern to TLB given both series share a strong downward trend
+
+acf(TFR, lag.max = 20,
+    main = "ACF of Total Fertility Rate (1960-2024)")
+```
+```{r pacf_tfr, fig.width=10, fig.height=4}
+# PACF of TFR to identify any autoregressive structure that may be present in the series
+
+pacf(TFR, lag.max = 20,
+     main = "PACF of Total Fertility Rate (1960-2024)")
+```
+
+The ACF for both TLB and TFR decreases very slowly and remains significant across many lags which is a signature of a non-stationary series with a strong trend, consistent with the course notes. The PACF for both series shows a dominant spike at lag 1, suggesting that once the trend is removed an autoregressive component may be present. Differencing is required before fitting any ARIMA model.
+
+### 5.2 First-Order Differencing
+
+Since both series have a clear downward trend we apply first-order differencing, defined as:
+
+∇x_t = x_t − x_{t-1}
+
+This removes the trend and is used to determine the differencing order d in our ARIMA(p,d,q) models.
+```{r diff_tlb, fig.width=10, fig.height=4}
+# Apply first-order differencing to TLB training data using the diff() function and plot the result.A horizontal line at zero is added if the differenced series fluctuates around zero with no clear trend, stationarity has been achieved.
+
+plot(diff(TLB_train),
+     main = "First Difference of TLB (1960-2012)",
+     ylab = "Change in TLB",
+     xlab = "Year",
+     col  = "steelblue",
+     lwd  = 2)
+abline(h = 0, lty = 2)
+```
+```{r diff_tfr, fig.width=10, fig.height=4}
+# Apply first-order differencing to TFR training data and plot the result
+
+plot(diff(TFR_train),
+     main = "First Difference of TFR (1960-2012)",
+     ylab = "Change in TFR",
+     xlab = "Year",
+     col  = "darkred",
+     lwd  = 2)
+abline(h = 0, lty = 2)
+```
+```{r acf_diff_tlb, fig.width=10, fig.height=4}
+# ACF of the differenced TLB series.If differencing has achieved stationarity, the ACF should no longer show the slow decay pattern seen in the raw series. Significant spikes indicate the MA order q to include in the ARIMA model.
+
+acf(diff(TLB_train), lag.max = 20,
+    main = "ACF of First Differenced TLB")
+```
+```{r pacf_diff_tlb, fig.width=10, fig.height=4}
+# PACF of the differenced TLB series.Significant spikes in the PACF indicate the AR order p to include in the ARIMA model.
+
+pacf(diff(TLB_train), lag.max = 20,
+     main = "PACF of First Differenced TLB")
+```
+```{r acf_diff_tfr, fig.width=10, fig.height=4}
+# ACF of the differenced TFR series
+
+acf(diff(TFR_train), lag.max = 20,
+    main = "ACF of First Differenced TFR")
+```
+```{r pacf_diff_tfr, fig.width=10, fig.height=4}
+# PACF of the differenced TFR series
+
+pacf(diff(TFR_train), lag.max = 20,
+     main = "PACF of First Differenced TFR")
+```
+
+After first-order differencing both series fluctuate around zero with no clear trend, suggesting approximate stationarity has been achieved. This indicates we should set d = 1 in our ARIMA(p,1,q) models. The ACF and PACF of the differenced series are now examined to identify suitable AR and MA orders for model fitting.
