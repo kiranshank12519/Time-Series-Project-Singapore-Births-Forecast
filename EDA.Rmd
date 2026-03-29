@@ -129,8 +129,7 @@ legend("topright",
 ```
 With the reference lines added, the features identified in the raw plots can now be directly linked to their likely causes. The acceleration in TLB and TFR decline after 1969 aligns precisely with the Stop-at-Two policy, the brief recovery in TLB around 1988-1990 corresponds to the pro-natalist reversal, and the sharp dip in 2020 coincides with the COVID-19 pandemic. These annotated plots will serve as the basis for the temporal feature analysis that follows.
 
-# Literature on forecasting births
-## 3. Literature Review
+## Literature on forecasting births
 
 To gain an understanding of how others have modelled and forecasted birth rates, a review of recent literature was carried out. He (2023) applied ARIMA models to 74 years of Chinese birth rate data and found ARIMA(0,1,2) to be the best fitting model based on AIC, with first-order differencing sufficient to achieve stationarity. Similarly, a study of Philippine birth data (European Journal of IT and Computer Science, 2025) found that ARIMA-class models outperformed other methods for forecasting declining annual birth rates in a Southeast Asian context directly comparable to Singapore.
 
@@ -221,3 +220,116 @@ pacf(diff(TFR_train), lag.max = 20,
 ```
 
 After first-order differencing both series fluctuate around zero with no clear trend, suggesting approximate stationarity has been achieved. This indicates we should set d = 1 in our ARIMA(p,1,q) models. The ACF and PACF of the differenced series are now examined to identify suitable AR and MA orders for model fitting.
+
+---
+
+### 5.3 Candidate ARIMA Models (Training Period: 1960-2012)
+
+Based on the ACF and PACF patterns of the differenced series, we fit several candidate ARIMA(p,1,q) models to the training period 1960-2012 and compare using AIC. A lower AIC indicates a better balance between model fit and complexity.
+```{r models}
+# We fit four candidate ARIMA(p,1,q) models to the training period 1960-2012 for each series.
+# d = 1 throughout as first-order differencing was shown to achieve stationarity above. The arima() function is from base R and takes the time series and order = c(p, d, q) as arguments.
+
+# TLB candidate models
+tlb_m1 <- arima(TLB_train, order = c(1,1,0)) # AR(1) on differenced series
+tlb_m2 <- arima(TLB_train, order = c(0,1,1)) # MA(1) on differenced series
+tlb_m3 <- arima(TLB_train, order = c(1,1,1)) # ARMA(1,1) on differenced series
+tlb_m4 <- arima(TLB_train, order = c(2,1,0)) # AR(2) on differenced series
+
+# Compare AIC values for TLB — lower AIC is better AIC penalises model complexity so it balances fit against the number of parameters estimated
+cat("=== TLB Model AIC Comparison ===\n")
+cat("ARIMA(1,1,0):", AIC(tlb_m1), "\n")
+cat("ARIMA(0,1,1):", AIC(tlb_m2), "\n")
+cat("ARIMA(1,1,1):", AIC(tlb_m3), "\n")
+cat("ARIMA(2,1,0):", AIC(tlb_m4), "\n")
+
+# TFR candidate models — same four specifications
+tfr_m1 <- arima(TFR_train, order = c(1,1,0))
+tfr_m2 <- arima(TFR_train, order = c(0,1,1))
+tfr_m3 <- arima(TFR_train, order = c(1,1,1))
+tfr_m4 <- arima(TFR_train, order = c(2,1,0))
+
+# Compare AIC values for TFR
+cat("\n=== TFR Model AIC Comparison ===\n")
+cat("ARIMA(1,1,0):", AIC(tfr_m1), "\n")
+cat("ARIMA(0,1,1):", AIC(tfr_m2), "\n")
+cat("ARIMA(1,1,1):", AIC(tfr_m3), "\n")
+cat("ARIMA(2,1,0):", AIC(tfr_m4), "\n")
+
+#updated residuals
+tlb_best <- tlb_m2  # ARIMA(0,1,1) — lowest AIC for TLB
+tfr_best <- tfr_m3  # ARIMA(1,1,1) — lowest AIC for TFR
+```
+For TLB, the ARIMA(0,1,1) model produced the lowest AIC of 975.79, making it the preferred candidate for the training period 1960-2012. The ARIMA(1,1,0) model was a close second with an AIC of 975.81, suggesting that both a moving average and autoregressive specification of order 1 describe the differenced TLB series similarly well. The more complex models ARIMA(1,1,1) and ARIMA(2,1,0) both produced higher AIC values, indicating the added parameters did not
+sufficiently improve the fit to justify their inclusion.
+
+For TFR, the ARIMA(1,1,1) model produced the lowest AIC of -44.77 and is selected as the preferred candidate. Note that for TFR the AIC values are negative — this is not unusual and simply reflects the scale of the data, as TFR values are small decimals compared to the large counts in TLB. A more negative AIC still indicates a better fitting model. The ARIMA(1,1,0) and ARIMA(2,1,0) models were comparable to each other at around -39, while ARIMA(0,1,1) performed notably worse at -34.58, suggesting that an autoregressive component is important for capturing the structure of the differenced TFR series.
+
+Based on these results, `tlb_best` is updated to `tlb_m2` (ARIMA(0,1,1)) and `tfr_best` is updated to `tfr_m3` (ARIMA(1,1,1)) for the residual diagnostics and forecasting that follow.
+
+---
+
+### 5.4 Residual Diagnostics
+A well-fitting model should produce residuals resembling white noise, so no remaining autocorrelation structure. If the model has captured all the systematic information in the data, what remains should be purely random.
+```{r residuals}
+# Select the best model for each series based on the lowest AIC from Section 5.3 above.
+#Update tlb_m1 and tfr_m1 to whichever model had the lowest AIC — e.g. change to tlb_m2 if ARIMA(0,1,1) produced the lowest AIC for TLB.
+
+tlb_best <- tlb_m2  # ARIMA(0,1,1) - lowest AIC for TLB
+tfr_best <- tfr_m3  # ARIMA(1,1,1) - lowest AIC for TFR
+
+# Print the full model output including parameter estimates and standard errors
+cat("=== Best TLB Model ===\n")
+print(tlb_best)
+
+cat("\n=== Best TFR Model ===\n")
+print(tfr_best)
+```
+```{r resid_tlb, fig.width=10, fig.height=4}
+# ACF of the TLB model residuals.
+# As noted in the course notee, if the residuals resemble white noise the ACF  should show no significant spikes beyond the dotted blue significance bounds.
+# na.omit() removes the NA introduced by differencing.
+
+acf(na.omit(tlb_best$residuals), lag.max = 20,
+    main = "ACF of Residuals: Best TLB Model")
+```
+```{r resid_pacf_tlb, fig.width=10, fig.height=4}
+# PACF of the TLB model residuals.Any significant spikes here would suggest a remaining AR structure that has not been captured by the model.
+
+pacf(na.omit(tlb_best$residuals), lag.max = 20,
+     main = "PACF of Residuals: Best TLB Model")
+```
+```{r resid_tfr, fig.width=10, fig.height=4}
+# ACF of the TFR model residuals
+
+acf(na.omit(tfr_best$residuals), lag.max = 20,
+    main = "ACF of Residuals: Best TFR Model")
+```
+```{r resid_pacf_tfr, fig.width=10, fig.height=4}
+# PACF of the TFR model residuals
+
+pacf(na.omit(tfr_best$residuals), lag.max = 20,
+     main = "PACF of Residuals: Best TFR Model")
+```
+```{r qqplots, fig.width=10, fig.height=4}
+# Q-Q plots check whether the residuals are approximately normally distributed, a key assumption of the ARIMA model.Points close to the diagonal red line indicate the normality assumption is reasonable. par(mfrow) sets up a side-by-side plot layout.
+
+par(mfrow = c(1, 2))
+
+qqnorm(na.omit(tlb_best$residuals),
+       main = "Q-Q Plot: TLB Residuals")
+qqline(na.omit(tlb_best$residuals), col = "red")
+
+qqnorm(na.omit(tfr_best$residuals),
+       main = "Q-Q Plot: TFR Residuals")
+qqline(na.omit(tfr_best$residuals), col = "red")
+
+```
+
+Three diagnostic tools are used to assess model adequacy. The ACF and PACF of the residuals check whether any autocorrelation structure remains after fitting, the residuals should resemble white noise with no significant spikes. The Q-Q plot checks whether the residuals are approximately normally distributed, which is a key assumption of the ARIMA model.
+
+For the TLB ARIMA(0,1,1) model, the ACF of residuals shows all spikes within the significance bounds with only a marginal spike around lag 12, and the PACF is similarly clean. This is consistent with white noise, suggesting the model has adequately captured the structure of the data. The Q-Q plot shows points following the diagonal line closely through the central range with slight deviation at the upper tail, indicating mild but acceptable departures 
+from normality.
+
+For the TFR ARIMA(1,1,1) model, both the ACF and PACF of residuals show no significant spikes, which is a strong indication of white noise behaviour and a good model fit. The Q-Q plot shows reasonable alignment with the diagonal line, with some deviation at the lower tail suggesting a slight left skew. This may reflect the occasional large 
+drops in TFR caused by Singapore's policy interventions, which the model cannot fully account for. Overall both models appear adequate for preliminary forecasting purposes.
