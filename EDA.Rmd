@@ -1,7 +1,7 @@
 ---
 title: "Singapore Birth Rate EDA"
 author: "Kiran Shankaran"
-date: "2026-03-27"
+date: "27/03/2026"
 output: html_document
 ---
 
@@ -333,3 +333,158 @@ from normality.
 
 For the TFR ARIMA(1,1,1) model, both the ACF and PACF of residuals show no significant spikes, which is a strong indication of white noise behaviour and a good model fit. The Q-Q plot shows reasonable alignment with the diagonal line, with some deviation at the lower tail suggesting a slight left skew. This may reflect the occasional large 
 drops in TFR caused by Singapore's policy interventions, which the model cannot fully account for. Overall both models appear adequate for preliminary forecasting purposes.
+
+---
+
+### 5.5 Preliminary Forecast (2013-2024)
+
+Using the best fitting models we forecast TLB and TFR for 2013-2024 and compare against actual observed values.The vertical dotted line marks the end of the training period at 2012 — everything to the right is forecast territory. The shaded region represents the 95% prediction interval, within which we expect the true values to fall if the model is adequate.
+```{r forecast, fig.width=10, fig.height=5}
+# Use the predict() function to forecast 12 years ahead from the end of the training period (2012) to 2024.
+# predict() returns pred (the forecast values) and se (the standard errors used to compute intervals).
+tlb_fc <- predict(tlb_best, n.ahead = 12)
+tfr_fc <- predict(tfr_best, n.ahead = 12)
+
+
+plot(TLB,
+     main = "TLB: Observed vs Forecast (2013-2024)",
+     ylab = "Total Live Births",
+     xlab = "Year",
+     col  = "steelblue",
+     lwd  = 2)
+
+# Overlay the forecast values in red
+lines(tlb_fc$pred, col = "red", lwd = 2)
+
+# Add 95% prediction intervals: forecast +/- 1.96 * SE
+# 1.96 corresponds to the 97.5th percentile of the 
+# standard normal distribution
+lines(tlb_fc$pred + 1.96 * tlb_fc$se, col = "red", lty = 2)
+lines(tlb_fc$pred - 1.96 * tlb_fc$se, col = "red", lty = 2)
+
+# Vertical dotted line marking end of training period
+abline(v = 2012, lty = 3, col = "grey40")
+
+legend("topright",
+       legend = c("Observed", "Forecast", "95% PI"),
+       col    = c("steelblue", "red", "red"),
+       lty    = c(1, 1, 2),
+       cex    = 0.8)
+```
+
+```{r forecast_tfr, fig.width=10, fig.height=5}
+# TFR forecast plot — same structure as TLB above
+plot(TFR,
+     main = "TFR: Observed vs Forecast (2013-2024)",
+     ylab = "Total Fertility Rate",
+     xlab = "Year",
+     col  = "darkred",
+     lwd  = 2)
+
+# Overlay TFR forecast and prediction intervals in blue
+lines(tfr_fc$pred, col = "blue", lwd = 2)
+lines(tfr_fc$pred + 1.96 * tfr_fc$se, col = "blue", lty = 2)
+lines(tfr_fc$pred - 1.96 * tfr_fc$se, col = "blue", lty = 2)
+
+# Vertical dotted line marking end of training period
+abline(v = 2012, lty = 3, col = "grey40")
+
+legend("topright",
+       legend = c("Observed", "Forecast", "95% PI"),
+       col    = c("darkred", "blue", "blue"),
+       lty    = c(1, 1, 2),
+       cex    = 0.8)
+```
+
+The ARIMA(0,1,1) model forecasts TLB remaining approximately constant at around 43,000 births per year from 2013 onwards. The actual observed values however continue declining to around 33,000 by 2024, falling well below the forecast. While the observed values remain within the 95% prediction interval, this is largely due to the 
+interval widening considerably over time rather than the model accurately predicting the direction of the series. Overall the model underestimates the continued decline in TLB, suggesting that alternative specifications should be explored.
+
+The ARIMA(1,1,1) model forecasts TFR remaining approximately constant at around 1.2 from 2013 onwards. The actual observed values track very closely to the forecast through most of the period, declining slightly from around 1.2 to 
+0.97 by 2024. The observed values remain well within the 95% prediction interval throughout, and the forecast direction is broadly consistent with reality. Overall the ARIMA(1,1,1) model performs considerably better for TFR than the ARIMA(0,1,1) does for TLB, suggesting it is a reasonable candidate model to carry forward into the Final Report.
+---
+
+## 6. Research Questions
+
+Based on the EDA the following research questions are proposed for the Final Report:
+
+**RQ1:** Can ARIMA models fitted to Singapore's TLB and TFR data from 1960-2012 produce accurate forecasts for
+2013-2024, and how does accuracy compare across different model specifications?
+
+**RQ2:** Does the TFR series require a different model structure than TLB, given that TFR is a rate measure and may be affected differently by policy-driven structural breaks?
+
+**RQ3:** To what extent do social and economic factors such as the Stop-at-Two policy (1969) and pro-natalist reversal (1987) limit the predictive power of standard ARIMA models for Singapore's birth data?
+
+**Proposed analyses for Part 2:**
+
+- Fit at least 2 ARIMA models per series on 1960-2012
+- Compare models using AIC and residual diagnostics
+- Forecast 2013-2024 and compare against actual values
+- Consider whether structural breaks warrant subsetting
+
+**Anticipated limitations:**
+
+- Only 53 training observations limits model complexity
+- Policy-driven structural breaks may not be captured by standard ARIMA models
+- TLB depends on both fertility rates and population size which may confound modelling
+- The TFR definition change at 1980 introduces a subtle discontinuity
+
+---
+
+## 7. Statistical Appendix
+
+### 7.1 ARIMA(p, d, q) Model
+
+An ARIMA(p, d, q) model applied to a time series x_t is defined as:
+
+φ(B) ∇^d x_t = θ(B) w_t
+
+where:
+
+- B is the backshift operator: B x_t = x_{t-1}
+- ∇^d = (1 − B)^d is the differencing operator of order d
+- φ(B) = 1 − φ_1 B − ... − φ_p B^p is the AR polynomial
+- θ(B) = 1 + θ_1 B + ... + θ_q B^q is the MA polynomial
+- w_t ~ N(0, σ²) is white noise
+
+### 7.2 Autocorrelation Function (ACF)
+
+The sample autocorrelation at lag k is:
+
+r_k = Σ(x_t − x̄)(x_{t−k} − x̄) / Σ(x_t − x̄)²
+
+Under H₀: ρ_k = 0, significance bounds are plotted at ±2/√n. Any spike beyond these bounds indicates significant autocorrelation at that lag.
+
+### 7.3 Partial Autocorrelation Function (PACF)
+
+The partial autocorrelation at lag k measures the correlation between x_t and x_{t−k} after removing the linear effects of all intermediate observations. A pure AR(p) process has PACF that cuts off after lag p.
+
+### 7.4 Akaike Information Criterion (AIC)
+
+AIC = −2 log(L) + 2k
+
+where L is the maximised likelihood and k is the number of estimated parameters. Lower AIC indicates a better trade-off between model fit.
+
+### 7.5 White Noise
+
+A process w_t is white noise if:
+
+- E[w_t] = 0 for all t
+- Var(w_t) = σ² for all t
+- Cov(w_t, w_s) = 0 for all t ≠ s
+
+Residuals from a well-fitted model should behave as white noise, confirmed by inspecting the ACF and PACF of residuals for any remaining significant spikes.
+
+---
+
+## References
+
+He, Y. (2023). Forecasts and Analyzes of China's Birth Rate. Proceedings of DSIT 2023. 
+https://www.scitepress.org/Papers/2023/128198/
+
+European Journal of Information Technologies and Computer Science (2025). Forecasting Number of Births 
+in the Philippines Using SARIMA.https://eu-opensci.org/index.php/compute/article/view/10129
+
+United Nations, Department of Economic and Social Affairs, Population Division (2023). World Population Prospects 2023. Retrieved from https://population.un.org/wpp/
+
+Singapore Department of Statistics (2026). Births and Fertility Rates, Annual. Retrieved from 
+https://data.gov.sg
