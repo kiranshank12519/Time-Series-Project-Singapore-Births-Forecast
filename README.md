@@ -22,7 +22,7 @@ data from 1960–2012 can accurately forecast TLB and TFR for the period
 | `README.md` | This file — project overview and instructions |
 | `singapore_births.csv` | Raw data: annual TLB and TFR for Singapore, 1960–2024 |
 | `EDA.Rmd` | R Markdown source file containing all analysis code and commentary |
-| `EDA.html` | Rendered HTML output of the EDA report |
+
 
 ## Data Source
 
