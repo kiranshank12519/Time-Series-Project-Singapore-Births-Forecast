@@ -1,0 +1,244 @@
+---
+title: "Forecasting Singapore's Total Live Births and Total Fertility Rate: The Role of the Chinese Zodiac Dragon Year Effect"
+author: "Kiran Shankaran"
+date: "8 June 2026"
+output:
+  pdf_document:
+    number_sections: false
+    fig_caption: true
+geometry: margin=1in
+fontsize: 11pt
+header-includes:
+  - \usepackage{setspace}
+  - \onehalfspacing
+---
+
+```{r setup, include=FALSE}
+# Global chunk options: hide code from PDF body, hide messages and 
+# warnings, set default figure dimensions and centre alignment.
+knitr::opts_chunk$set(echo = FALSE, message = FALSE, warning = FALSE,
+                      fig.width = 7, fig.height = 4, fig.align = "center")
+```
+
+```{r load-data, include=FALSE}
+# Read the raw SingStat Table M810091 export. The file is in wide format 
+# with years as columns running from 2025 (left) to 1960 (right). Missing 
+# values are encoded as the string "na" so we declare that on read.
+
+raw <- read.csv("BirthsAndFertilityRates.csv",
+                na.strings = "na",
+                stringsAsFactors = FALSE,
+                check.names = FALSE)
+
+# Some row labels in the source CSV are indented with leading spaces 
+# (e.g. "    Chinese"). Strip the whitespace so each variable name 
+# matches cleanly when we extract rows.
+raw$DataSeries <- trimws(raw$DataSeries)
+
+# Helper function: pull a named row from the raw data, convert to 
+# numeric, reverse year order so 1960 comes first, and drop the 
+# incomplete 2025 column. Returns a length-65 numeric vector.
+extract_row <- function(name) {
+  row_vals <- raw[raw$DataSeries == name, -1]
+  values <- as.numeric(unlist(row_vals))
+  values <- rev(values)
+  values[1:65]
+}
+
+# Build a single tidy dataframe with one row per year and one column 
+# per variable. R-friendly names replace the original source labels.
+fertility <- data.frame(
+  Year         = 1960:2024,
+  TFR          = extract_row("Total Fertility Rate (TFR)"),
+  TLB          = extract_row("Total Live-Births"),
+  TFR_Chinese  = extract_row("Chinese"),
+  TFR_Malay    = extract_row("Malays"),
+  TFR_Indian   = extract_row("Indians"),
+  TFR_15_19    = extract_row("15 - 19 Years"),
+  TFR_20_24    = extract_row("20 - 24 Years"),
+  TFR_25_29    = extract_row("25 - 29 Years"),
+  TFR_30_34    = extract_row("30 - 34 Years"),
+  TFR_35_39    = extract_row("35 - 39 Years"),
+  TFR_40_44    = extract_row("40 - 44 Years"),
+  TFR_45_49    = extract_row("45 - 49 Years"),
+  CBR          = extract_row("Crude Birth Rate"),
+  GRR          = extract_row("Gross Reproduction Rate"),
+  NRR          = extract_row("Net Reproduction Rate")
+)
+
+# Convert variables used in modelling to ts objects. Base R's arima() 
+# and related time series functions require ts inputs rather than 
+# dataframe columns.
+TLB <- ts(fertility$TLB,         start = 1960, frequency = 1)
+TFR <- ts(fertility$TFR,         start = 1960, frequency = 1)
+TFR_chinese <- ts(fertility$TFR_Chinese, start = 1960, frequency = 1)
+TFR_malay   <- ts(fertility$TFR_Malay,   start = 1960, frequency = 1)
+TFR_indian  <- ts(fertility$TFR_Indian,  start = 1960, frequency = 1)
+
+# Training period for model estimation runs from 1960 to 2012. The 
+# remaining years (2013 to 2024) form the test set used to evaluate 
+# forecast accuracy.
+TLB_train <- window(TLB, end = 2012)
+TFR_train <- window(TFR, end = 2012)
+```
+
+# Abstract
+
+
+
+GitHub repository: <https://github.com/kiranshank12519/Time-Series-Project-Singapore-Births-Forecast>
+
+---
+
+# 1. Introduction
+
+This study evaluates whether incorporating a 12-year seasonal component, 
+reflecting the documented Chinese zodiac Dragon Year fertility effect 
+(Agarwal et al., 2021), improves forecast accuracy for Singapore's Total 
+Live Births (TLB) and Total Fertility Rate (TFR) compared to standard 
+non-seasonal ARIMA models.
+
+The motivation arises from the exploratory analysis conducted in Part 1, 
+in which an ARIMA(0,1,1) model was selected as the best non-seasonal fit 
+for TLB but produced a flat forecast that systematically underestimated 
+the continued decline observed between 2013 and 2024. A marginal spike at 
+lag 12 was visible in the residual autocorrelation function but not 
+investigated further. Singapore's demographic literature offers a clear 
+hypothesis for this periodicity: years aligned with the Chinese zodiac 
+Dragon experience elevated birth rates within the Chinese-majority 
+population, producing a 12-year cycle that overlays the long-run 
+downward trend.
+
+*[Remainder of Introduction to be drafted Day 3.]*
+
+# 2. Literature Review
+
+*[Placeholder — Day 3. Will cover: Singapore fertility policy timeline 
+(anti-natalist 1960s-80s, pro-natalist from 1987, M&P Packages 
+2001-2015); documented Chinese zodiac Dragon Year fertility effect 
+(Agarwal et al., 2021); prior ARIMA and SARIMA applications to fertility 
+forecasting in Singapore and comparable Asian contexts.]*
+
+# 3. Methods
+
+## 3.1 Data
+
+The data were sourced from the Singapore Department of Statistics 
+(SingStat Table M810091), covering annual observations from 1960 to 2024. 
+The variables used in this analysis are Total Live Births (TLB), the 
+aggregate Total Fertility Rate (TFR), and TFR disaggregated by ethnic 
+group (Chinese, Malay, and Indian). Standard preparation was applied: 
+year order was reversed to chronological, missing values encoded as the 
+string "na" in the source file were converted to `NA`, and the incomplete 
+2025 column was excluded. All series were converted to time series 
+objects with annual frequency for subsequent modelling.
+
+## 3.2 Stationarity Testing
+
+
+## 3.3 Non-seasonal ARIMA Models
+
+
+
+## 3.4 Seasonal ARIMA Models
+
+
+
+## 3.5 Residual Diagnostics
+
+
+
+## 3.6 Forecast Evaluation
+
+
+# 4. Results
+
+
+
+# 5. Discussion
+
+
+
+# 6. Conclusion
+
+
+
+# References
+
+
+
+\newpage
+
+# Statistical Appendix
+
+## A.1 ARIMA(p, d, q) Model
+
+An ARIMA(p, d, q) model applied to a time series $x_t$ is defined as:
+
+$$\phi(B) \, \nabla^d x_t = \theta(B) \, w_t$$
+
+where $B$ is the backshift operator ($B x_t = x_{t-1}$), 
+$\nabla^d = (1 - B)^d$ is the differencing operator of order $d$, 
+$\phi(B) = 1 - \phi_1 B - \cdots - \phi_p B^p$ is the autoregressive 
+polynomial, $\theta(B) = 1 + \theta_1 B + \cdots + \theta_q B^q$ is the 
+moving average polynomial, and $w_t \sim N(0, \sigma^2)$ is white noise.
+
+## A.2 Seasonal ARIMA Model
+
+The seasonal extension SARIMA$(p, d, q)(P, D, Q)_s$ adds seasonal AR, 
+differencing, and MA terms at lag $s$:
+
+$$\Phi(B^s) \, \phi(B) \, \nabla_s^D \, \nabla^d x_t = \Theta(B^s) \, \theta(B) \, w_t$$
+
+where $\Phi$ and $\Theta$ are the seasonal AR and MA polynomials in $B^s$, 
+and $\nabla_s = 1 - B^s$ is the seasonal differencing operator. For this 
+study, $s = 12$ to reflect the proposed Dragon Year periodicity.
+
+## A.3 Autocorrelation and Partial Autocorrelation Functions
+
+The sample autocorrelation at lag $k$ is
+
+$$r_k = \frac{\sum_{t=k+1}^{n} (x_t - \bar{x})(x_{t-k} - \bar{x})}{\sum_{t=1}^{n} (x_t - \bar{x})^2}$$
+
+Significance bounds under $H_0: \rho_k = 0$ are plotted at $\pm 2/\sqrt{n}$. 
+The partial autocorrelation at lag $k$ measures the correlation between 
+$x_t$ and $x_{t-k}$ after removing the linear effects of intermediate 
+observations.
+
+## A.4 KPSS Test for Stationarity
+
+The Kwiatkowski–Phillips–Schmidt–Shin test takes the null hypothesis that 
+the series is (level- or trend-) stationary. A rejection of $H_0$ at the 
+chosen significance level indicates non-stationarity requiring 
+transformation or differencing.
+
+## A.5 Ljung-Box Test for White Noise Residuals
+
+The Ljung-Box statistic tests the joint null that the first $h$ 
+autocorrelations of the residuals are zero:
+
+$$Q = n(n+2) \sum_{k=1}^{h} \frac{\hat{r}_k^2}{n-k}$$
+
+Under $H_0$, $Q$ follows a $\chi^2$ distribution with $h - p - q$ 
+degrees of freedom for an ARIMA$(p, d, q)$ model. Failure to reject 
+$H_0$ provides evidence that residuals behave as white noise.
+
+## A.6 Akaike Information Criterion
+
+$$\mathrm{AIC} = -2 \log L + 2k$$
+
+where $L$ is the maximised likelihood and $k$ is the number of estimated 
+parameters. Lower AIC values indicate a better trade-off between model 
+fit and complexity.
+
+## A.7 Forecast Accuracy Metrics
+
+Root Mean Squared Error and Mean Absolute Percentage Error are used to 
+compare forecast performance on the test period (2013-2024):
+
+$$\mathrm{RMSE} = \sqrt{\frac{1}{h} \sum_{t=1}^{h} (y_t - \hat{y}_t)^2}
+\qquad
+\mathrm{MAPE} = \frac{100}{h} \sum_{t=1}^{h} \left| \frac{y_t - \hat{y}_t}{y_t} \right|$$
+
+where $y_t$ is the observed value and $\hat{y}_t$ is the forecast at 
+horizon $t$, with $h = 12$ here.
