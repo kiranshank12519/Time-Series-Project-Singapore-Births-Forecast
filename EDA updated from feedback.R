@@ -1,4 +1,3 @@
-
 # Author:  Kiran Shankaran
 # ============================================================================
 
@@ -7,6 +6,9 @@
 
 # tseries provides kpss.test();
 pacman::p_load(tseries)
+
+# Create figures folder if it doesn't exist
+if (!dir.exists("figures")) dir.create("figures")
 
 
 
@@ -97,43 +99,58 @@ TFR_test  <- window(TFR, start = 2013)
 
 # Figure 1: Raw TFR. Dragon years as red circles, Tiger years as blue 
 # triangles, train/test boundary as dashed vertical line at 2012.
-plot(fertility$Year, fertility$TFR, type = "l", lwd = 1.5,
-     xlab = "Year", ylab = "TFR",
-     main = "Singapore Total Fertility Rate, 1960-2024")
-points(dragon_years,
-       fertility$TFR[fertility$Year %in% dragon_years],
-       pch = 19, col = "red", cex = 1.4)
-points(tiger_years,
-       fertility$TFR[fertility$Year %in% tiger_years],
-       pch = 17, col = "blue", cex = 1.4)
-abline(v = 2012, lty = 2, col = "grey60")
-legend("topright",
-       legend = c("Dragon years", "Tiger years", "Train/test boundary"),
-       pch = c(19, 17, NA),
-       lty = c(NA, NA, 2),
-       col = c("red", "blue", "grey60"),
-       bty = "n", cex = 0.9)
+plot_tfr_raw <- function() {
+  plot(fertility$Year, fertility$TFR, type = "l", lwd = 1.5,
+       xlab = "Year", ylab = "TFR",
+       main = "Singapore Total Fertility Rate, 1960-2024")
+  points(dragon_years,
+         fertility$TFR[fertility$Year %in% dragon_years],
+         pch = 19, col = "red", cex = 1.4)
+  points(tiger_years,
+         fertility$TFR[fertility$Year %in% tiger_years],
+         pch = 17, col = "blue", cex = 1.4)
+  abline(v = 2012, lty = 2, col = "grey60")
+  legend("topright",
+         legend = c("Dragon years", "Tiger years", "Train/test boundary"),
+         pch = c(19, 17, NA),
+         lty = c(NA, NA, 2),
+         col = c("red", "blue", "grey60"),
+         bty = "n", cex = 0.9)
+}
+
+png("figures/fig1_tfr_raw.png", width = 1800, height = 1000, res = 200)
+plot_tfr_raw()
+dev.off()
+plot_tfr_raw()
 
 # From the graph it seems like there are spikes during the year of the dragon in
 # the TFR plot which reflects what was found in the literature
 
 # Figure 2: Raw TLB with same markers
-plot(fertility$Year, fertility$TLB, type = "l", lwd = 1.5,
-     xlab = "Year", ylab = "TLB",
-     main = "Singapore Total Live Births, 1960-2024")
-points(dragon_years,
-       fertility$TLB[fertility$Year %in% dragon_years],
-       pch = 19, col = "red", cex = 1.4)
-points(tiger_years,
-       fertility$TLB[fertility$Year %in% tiger_years],
-       pch = 17, col = "blue", cex = 1.4)
-abline(v = 2012, lty = 2, col = "grey60")
-legend("topright",
-       legend = c("Dragon years", "Tiger years", "Train/test boundary"),
-       pch = c(19, 17, NA),
-       lty = c(NA, NA, 2),
-       col = c("red", "blue", "grey60"),
-       bty = "n", cex = 0.9)
+plot_tlb_raw <- function() {
+  plot(fertility$Year, fertility$TLB, type = "l", lwd = 1.5,
+       xlab = "Year", ylab = "TLB",
+       main = "Singapore Total Live Births, 1960-2024")
+  points(dragon_years,
+         fertility$TLB[fertility$Year %in% dragon_years],
+         pch = 19, col = "red", cex = 1.4)
+  points(tiger_years,
+         fertility$TLB[fertility$Year %in% tiger_years],
+         pch = 17, col = "blue", cex = 1.4)
+  abline(v = 2012, lty = 2, col = "grey60")
+  legend("topright",
+         legend = c("Dragon years", "Tiger years", "Train/test boundary"),
+         pch = c(19, 17, NA),
+         lty = c(NA, NA, 2),
+         col = c("red", "blue", "grey60"),
+         bty = "n", cex = 0.9)
+}
+
+png("figures/fig2_tlb_raw.png", width = 1800, height = 1000, res = 200)
+plot_tlb_raw()
+dev.off()
+plot_tlb_raw()
+
 # Same trend can be seen where the dragon year has a spike in births and there
 # is a bit of a dip during the year of the tiger.
 
@@ -163,51 +180,65 @@ TLB_log_sdiff_rdiff <- diff(TLB_log_sdiff, lag = 1)
 # ----------------------------------------------------------------------------
 
 # Figure 5: TFR transformation stages
-par(mfrow = c(2, 2), mar = c(4, 4, 3, 1))
+plot_tfr_transformations <- function() {
+  par(mfrow = c(2, 2), mar = c(4, 4, 3, 1))
+  
+  plot(TFR_train, type = "l", lwd = 1.5,
+       main = "Raw TFR (training)",
+       xlab = "Year", ylab = "TFR")
+  
+  plot(TFR_log, type = "l", lwd = 1.5,
+       main = "log(TFR)",
+       xlab = "Year", ylab = "log(TFR)")
+  
+  plot(TFR_log_sdiff, type = "l", lwd = 1.5,
+       main = "log(TFR) with seasonal diff (lag 12)",
+       xlab = "Year", ylab = "")
+  abline(h = 0, lty = 3, col = "grey50")
+  
+  plot(TFR_log_sdiff_rdiff, type = "l", lwd = 1.5,
+       main = "log(TFR) with seasonal + regular diff",
+       xlab = "Year", ylab = "")
+  abline(h = 0, lty = 3, col = "grey50")
+  
+  par(mfrow = c(1, 1))
+}
 
-plot(TFR_train, type = "l", lwd = 1.5,
-     main = "Raw TFR (training)",
-     xlab = "Year", ylab = "TFR")
-
-plot(TFR_log, type = "l", lwd = 1.5,
-     main = "log(TFR)",
-     xlab = "Year", ylab = "log(TFR)")
-
-plot(TFR_log_sdiff, type = "l", lwd = 1.5,
-     main = "log(TFR) with seasonal diff (lag 12)",
-     xlab = "Year", ylab = "")
-abline(h = 0, lty = 3, col = "grey50")
-
-plot(TFR_log_sdiff_rdiff, type = "l", lwd = 1.5,
-     main = "log(TFR) with seasonal + regular diff",
-     xlab = "Year", ylab = "")
-abline(h = 0, lty = 3, col = "grey50")
-
-par(mfrow = c(1, 1))
+png("figures/fig5_tfr_transformations.png", width = 1800, height = 1400, res = 200)
+plot_tfr_transformations()
+dev.off()
+plot_tfr_transformations()
 
 
 # Figure 6: TLB transformation stages
-par(mfrow = c(2, 2), mar = c(4, 4, 3, 1))
+plot_tlb_transformations <- function() {
+  par(mfrow = c(2, 2), mar = c(4, 4, 3, 1))
+  
+  plot(TLB_train, type = "l", lwd = 1.5,
+       main = "Raw TLB (training)",
+       xlab = "Year", ylab = "TLB")
+  
+  plot(TLB_log, type = "l", lwd = 1.5,
+       main = "log(TLB)",
+       xlab = "Year", ylab = "log(TLB)")
+  
+  plot(TLB_log_sdiff, type = "l", lwd = 1.5,
+       main = "log(TLB) with seasonal diff (lag 12)",
+       xlab = "Year", ylab = "")
+  abline(h = 0, lty = 3, col = "grey50")
+  
+  plot(TLB_log_sdiff_rdiff, type = "l", lwd = 1.5,
+       main = "log(TLB) with seasonal + regular diff",
+       xlab = "Year", ylab = "")
+  abline(h = 0, lty = 3, col = "grey50")
+  
+  par(mfrow = c(1, 1))
+}
 
-plot(TLB_train, type = "l", lwd = 1.5,
-     main = "Raw TLB (training)",
-     xlab = "Year", ylab = "TLB")
-
-plot(TLB_log, type = "l", lwd = 1.5,
-     main = "log(TLB)",
-     xlab = "Year", ylab = "log(TLB)")
-
-plot(TLB_log_sdiff, type = "l", lwd = 1.5,
-     main = "log(TLB) with seasonal diff (lag 12)",
-     xlab = "Year", ylab = "")
-abline(h = 0, lty = 3, col = "grey50")
-
-plot(TLB_log_sdiff_rdiff, type = "l", lwd = 1.5,
-     main = "log(TLB) with seasonal + regular diff",
-     xlab = "Year", ylab = "")
-abline(h = 0, lty = 3, col = "grey50")
-
-par(mfrow = c(1, 1))
+png("figures/fig6_tlb_transformations.png", width = 1800, height = 1400, res = 200)
+plot_tlb_transformations()
+dev.off()
+plot_tlb_transformations()
 
 
 # KPSS STATIONARITY TESTS AT EACH STAGE
@@ -273,20 +304,34 @@ print(kpss_d2)
 # are visible.
 
 # Figure 3: ACF and PACF for stationary log(TFR)
-par(mfrow = c(1, 2), mar = c(4, 4, 3, 1))
-acf(TFR_log_sdiff_rdiff, lag.max = 36,
-    main = "ACF: log(TFR), seasonal + regular diff")
-pacf(TFR_log_sdiff_rdiff, lag.max = 36,
-     main = "PACF: log(TFR), seasonal + regular diff")
-par(mfrow = c(1, 1))
+plot_tfr_acf_pacf <- function() {
+  par(mfrow = c(1, 2), mar = c(4, 4, 3, 1))
+  acf(TFR_log_sdiff_rdiff, lag.max = 36,
+      main = "ACF: log(TFR), seasonal + regular diff")
+  pacf(TFR_log_sdiff_rdiff, lag.max = 36,
+       main = "PACF: log(TFR), seasonal + regular diff")
+  par(mfrow = c(1, 1))
+}
+
+png("figures/fig3_tfr_acf_pacf.png", width = 1800, height = 900, res = 200)
+plot_tfr_acf_pacf()
+dev.off()
+plot_tfr_acf_pacf()
 
 # Figure 4: ACF and PACF for stationary log(TLB)
-par(mfrow = c(1, 2), mar = c(4, 4, 3, 1))
-acf(TLB_log_sdiff_rdiff, lag.max = 36,
-    main = "ACF: log(TLB), seasonal + regular diff")
-pacf(TLB_log_sdiff_rdiff, lag.max = 36,
-     main = "PACF: log(TLB), seasonal + regular diff")
-par(mfrow = c(1, 1))
+plot_tlb_acf_pacf <- function() {
+  par(mfrow = c(1, 2), mar = c(4, 4, 3, 1))
+  acf(TLB_log_sdiff_rdiff, lag.max = 36,
+      main = "ACF: log(TLB), seasonal + regular diff")
+  pacf(TLB_log_sdiff_rdiff, lag.max = 36,
+       main = "PACF: log(TLB), seasonal + regular diff")
+  par(mfrow = c(1, 1))
+}
+
+png("figures/fig4_tlb_acf_pacf.png", width = 1800, height = 900, res = 200)
+plot_tlb_acf_pacf()
+dev.off()
+plot_tlb_acf_pacf()
 
 # ACF/PACF of LOG SERIES WITH FIRST DIFFERENCE ONLY
 # ----------------------------------------------------------------------------
@@ -301,20 +346,34 @@ TFR_log_rdiff_only <- diff(log(TFR_train), lag = 1)
 TLB_log_rdiff_only <- diff(log(TLB_train), lag = 1)
 
 # Figure 7: ACF/PACF of first-differenced log TFR
-par(mfrow = c(1, 2), mar = c(4, 4, 3, 1))
-acf (TFR_log_rdiff_only, lag.max = 36,
-     main = "ACF: log(TFR), first diff only")
-pacf(TFR_log_rdiff_only, lag.max = 36,
-     main = "PACF: log(TFR), first diff only")
-par(mfrow = c(1, 1))
+plot_tfr_acf_pacf_first <- function() {
+  par(mfrow = c(1, 2), mar = c(4, 4, 3, 1))
+  acf (TFR_log_rdiff_only, lag.max = 36,
+       main = "ACF: log(TFR), first diff only")
+  pacf(TFR_log_rdiff_only, lag.max = 36,
+       main = "PACF: log(TFR), first diff only")
+  par(mfrow = c(1, 1))
+}
+
+png("figures/fig7_tfr_acf_pacf_first_diff.png", width = 1800, height = 900, res = 200)
+plot_tfr_acf_pacf_first()
+dev.off()
+plot_tfr_acf_pacf_first()
 
 # Figure 8: ACF/PACF of first-differenced log TLB
-par(mfrow = c(1, 2), mar = c(4, 4, 3, 1))
-acf (TLB_log_rdiff_only, lag.max = 36,
-     main = "ACF: log(TLB), first diff only")
-pacf(TLB_log_rdiff_only, lag.max = 36,
-     main = "PACF: log(TLB), first diff only")
-par(mfrow = c(1, 1))
+plot_tlb_acf_pacf_first <- function() {
+  par(mfrow = c(1, 2), mar = c(4, 4, 3, 1))
+  acf (TLB_log_rdiff_only, lag.max = 36,
+       main = "ACF: log(TLB), first diff only")
+  pacf(TLB_log_rdiff_only, lag.max = 36,
+       main = "PACF: log(TLB), first diff only")
+  par(mfrow = c(1, 1))
+}
+
+png("figures/fig8_tlb_acf_pacf_first_diff.png", width = 1800, height = 900, res = 200)
+plot_tlb_acf_pacf_first()
+dev.off()
+plot_tlb_acf_pacf_first()
 
 # Print values at lags 1-20 for inspection
 tfr_acf2  <- acf (TFR_log_rdiff_only, lag.max = 36, plot = FALSE)
@@ -380,3 +439,13 @@ print(acf_pacf_table)
 # lag-12 or lag-13 behaviour suggests testing seasonal/cyclic SARIMA terms.
 # Therefore, candidate models should include low-order p and q, and a 12-year
 # seasonal component.
+
+
+# SAVE TABLES FOR FINAL REPORT
+# ----------------------------------------------------------------------------
+
+saveRDS(kpss_table,                "kpss_table.rds")
+saveRDS(kpss_d2,                   "kpss_d2.rds")
+saveRDS(acf_pacf_table,            "acf_pacf_table.rds")
+saveRDS(acf_pacf_table_first_diff, "acf_pacf_table_first_diff.rds")
+
