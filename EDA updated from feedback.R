@@ -236,11 +236,32 @@ kpss_table <- rbind(
 
 print(kpss_table)
 
+
+# The seasonal + regular differencing establishes one route to 
+# stationarity, supporting SARIMA models. We also test whether second-order 
+# regular differencing alone achieves stationarity, which would support 
+# non-seasonal ARIMA models with d=2.
+
+TFR_log_d2 <- diff(diff(log(TFR_train)))
+TLB_log_d2 <- diff(diff(log(TLB_train)))
+
+kpss_d2 <- rbind(
+  "log(TFR) twice-differenced (d=2)" = run_kpss(TFR_log_d2),
+  "log(TLB) twice-differenced (d=2)" = run_kpss(TLB_log_d2)
+)
+
+cat("\n=== KPSS for alternative d=2 route ===\n")
+print(kpss_d2)
+
 # KPSS confirms that the raw and log-transformed series are non-stationary. For
 # TFR, lag-12 seasonal differencing alone is not enough, so both seasonal and
 # regular differencing are needed. For TLB, lag-12 seasonal differencing appears
 # sufficient, so regular differencing may not be required. This suggests using
 # d=1,D=1 for TFR, but considering d=0,D=1 for TLB.
+
+# KPSS also shows that a d=2 route makes both logged series stationary.
+# However, this is a more aggressive non-seasonal approach and does not directly
+# model the 12-year Dragon-cycle structure, so it is treated as a comparison.
 
 
 # ACF AND PACF OF STATIONARY SERIES (lag.max = 36)
