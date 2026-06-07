@@ -1,7 +1,7 @@
 ---
 title: "Forecasting Singapore's Total Live Births and Total Fertility Rate: The Role of the Chinese Zodiac Dragon Year Effect"
 author: "Kiran Shankaran"
-date: "8 June 2026"
+date: "1 June 2026"
 output:
   pdf_document:
     number_sections: false
@@ -21,65 +21,20 @@ knitr::opts_chunk$set(echo = FALSE, message = FALSE, warning = FALSE,
 ```
 
 ```{r load-data, include=FALSE}
-# Read the raw SingStat Table M810091 export. The file is in wide format 
-# with years as columns running from 2025 (left) to 1960 (right). Missing 
-# values are encoded as the string "na" so we declare that on read.
+# Load pre-computed analysis results. These RDS files are produced by 
+# running EDA.R and Analysis.R first.
 
-raw <- read.csv("BirthsAndFertilityRates.csv",
-                na.strings = "na",
-                stringsAsFactors = FALSE,
-                check.names = FALSE)
+kpss_table                <- readRDS("kpss_table.rds")
+kpss_d2                   <- readRDS("kpss_d2.rds")
+acf_pacf_table            <- readRDS("acf_pacf_table.rds")
+acf_pacf_table_first_diff <- readRDS("acf_pacf_table_first_diff.rds")
 
-# Some row labels in the source CSV are indented with leading spaces 
-# (e.g. "    Chinese"). Strip the whitespace so each variable name 
-# matches cleanly when we extract rows.
-raw$DataSeries <- trimws(raw$DataSeries)
-
-# Helper function: pull a named row from the raw data, convert to 
-# numeric, reverse year order so 1960 comes first, and drop the 
-# incomplete 2025 column. Returns a length-65 numeric vector.
-extract_row <- function(name) {
-  row_vals <- raw[raw$DataSeries == name, -1]
-  values <- as.numeric(unlist(row_vals))
-  values <- rev(values)
-  values[1:65]
-}
-
-# Build a single tidy dataframe with one row per year and one column 
-# per variable. R-friendly names replace the original source labels.
-fertility <- data.frame(
-  Year         = 1960:2024,
-  TFR          = extract_row("Total Fertility Rate (TFR)"),
-  TLB          = extract_row("Total Live-Births"),
-  TFR_Chinese  = extract_row("Chinese"),
-  TFR_Malay    = extract_row("Malays"),
-  TFR_Indian   = extract_row("Indians"),
-  TFR_15_19    = extract_row("15 - 19 Years"),
-  TFR_20_24    = extract_row("20 - 24 Years"),
-  TFR_25_29    = extract_row("25 - 29 Years"),
-  TFR_30_34    = extract_row("30 - 34 Years"),
-  TFR_35_39    = extract_row("35 - 39 Years"),
-  TFR_40_44    = extract_row("40 - 44 Years"),
-  TFR_45_49    = extract_row("45 - 49 Years"),
-  CBR          = extract_row("Crude Birth Rate"),
-  GRR          = extract_row("Gross Reproduction Rate"),
-  NRR          = extract_row("Net Reproduction Rate")
-)
-
-# Convert variables used in modelling to ts objects. Base R's arima() 
-# and related time series functions require ts inputs rather than 
-# dataframe columns.
-TLB <- ts(fertility$TLB,         start = 1960, frequency = 1)
-TFR <- ts(fertility$TFR,         start = 1960, frequency = 1)
-TFR_chinese <- ts(fertility$TFR_Chinese, start = 1960, frequency = 1)
-TFR_malay   <- ts(fertility$TFR_Malay,   start = 1960, frequency = 1)
-TFR_indian  <- ts(fertility$TFR_Indian,  start = 1960, frequency = 1)
-
-# Training period for model estimation runs from 1960 to 2012. The 
-# remaining years (2013 to 2024) form the test set used to evaluate 
-# forecast accuracy.
-TLB_train <- window(TLB, end = 2012)
-TFR_train <- window(TFR, end = 2012)
+tfr_results <- readRDS("tfr_results.rds")
+tlb_results <- readRDS("tlb_results.rds")
+tfr_table   <- readRDS("tfr_table.rds")
+tlb_table   <- readRDS("tlb_table.rds")
+best_tfr    <- readRDS("best_tfr.rds")
+best_tlb    <- readRDS("best_tlb.rds")
 ```
 
 # Abstract
@@ -109,15 +64,9 @@ Dragon experience elevated birth rates within the Chinese-majority
 population, producing a 12-year cycle that overlays the long-run 
 downward trend.
 
-*[Remainder of Introduction to be drafted Day 3.]*
 
 # 2. Literature Review
 
-*[Placeholder — Day 3. Will cover: Singapore fertility policy timeline 
-(anti-natalist 1960s-80s, pro-natalist from 1987, M&P Packages 
-2001-2015); documented Chinese zodiac Dragon Year fertility effect 
-(Agarwal et al., 2021); prior ARIMA and SARIMA applications to fertility 
-forecasting in Singapore and comparable Asian contexts.]*
 
 # 3. Methods
 
