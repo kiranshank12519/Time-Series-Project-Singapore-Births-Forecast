@@ -1,7 +1,7 @@
 ---
 title: "Forecasting Singapore's Total Live Births and Total Fertility Rate: The Role of the Chinese Zodiac Dragon Year Effect"
 author: "Kiran Shankaran"
-date: "1 June 2026"
+date: "8 June 2026"
 output:
   pdf_document:
     number_sections: false
@@ -11,10 +11,11 @@ fontsize: 11pt
 header-includes:
   - \usepackage{setspace}
   - \onehalfspacing
+  - \usepackage{caption}
+  - \captionsetup[table]{width=\textwidth}
 ---
 
 ```{r setup, include=FALSE}
-# Global chunk options: hide code from PDF body, hide messages and 
 # warnings, set default figure dimensions and centre alignment.
 knitr::opts_chunk$set(echo = FALSE, message = FALSE, warning = FALSE,
                       fig.width = 7, fig.height = 4, fig.align = "center")
@@ -39,155 +40,629 @@ best_tlb    <- readRDS("best_tlb.rds")
 
 # Abstract
 
-
+This study investigates whether the Chinese zodiac Dragon Year effect is still
+useful for forecasting Singapore’s Total Live Births (TLB) and Total Fertility
+Rate (TFR). Previous research has shown that Chinese-majority populations tend
+to record higher births in Dragon years and lower births in Tiger years, but the
+2024 Dragon Year did not produce an obvious increase in either series. Annual
+data from 1960 to 2024 were obtained from the Singapore Department of Statistics
+(SingStat Table M810091) and split into a 1960–2012 training period and a
+2013–2024 test period. For each series, thirteen candidate models were tested,
+including non-seasonal ARIMA models and SARIMA models with a 12-year seasonal
+period based on the zodiac cycle. Model viability was assessed using the
+Ljung-Box test on residuals at lag 24, and viable models were compared using
+out-of-sample RMSE. For TLB, the best model was SARIMA(1,1,1)(0,1,1)[12], which
+reduced test-set RMSE by 57% compared with the best viable non-seasonal
+alternative. This suggests that the 12-year seasonal structure is useful for
+forecasting absolute birth counts. For TFR, ARIMA(13,2,2) slightly outperformed
+all SARIMA candidates, suggesting the zodiac effect is weaker once births are
+expressed as a population-adjusted rate. The 2024 result also suggests this
+historical pattern should not be treated as permanent, because recent fertility
+behaviour may no longer follow the same cultural timing as earlier cohorts did
+in the past.
 
 GitHub repository: <https://github.com/kiranshank12519/Time-Series-Project-Singapore-Births-Forecast>
 
 ---
 
-# 1. Introduction
+# 1. Introduction and Literature Review
 
-This study evaluates whether incorporating a 12-year seasonal component, 
-reflecting the documented Chinese zodiac Dragon Year fertility effect 
-(Agarwal et al., 2021), improves forecast accuracy for Singapore's Total 
-Live Births (TLB) and Total Fertility Rate (TFR) compared to standard 
-non-seasonal ARIMA models.
+Singapore has experienced a major decline in fertility over the last several
+decades. The Total Fertility Rate (TFR), which measures the average number of
+children a woman would have over her lifetime under current fertility rates,
+fell from about 5.76 in 1960 to 0.97 in 2024. Total Live Births (TLB) also
+declined from 61,775 to 33,703 over the same period (Singapore Department of
+Statistics, 2024). This matters because low fertility contributes to population
+ageing and a smaller future working-age population. Singapore’s old-age support
+ratio has already fallen from 5.7 in 2015 to 3.3 in 2025, and is projected to
+fall further to 2.7 by 2030, meaning fewer working-age residents will be
+supporting each older resident (Ministry of Manpower, 2025). By 2030, around one
+in four Singaporeans are also expected to be aged 65 or above (Ministry of
+Health, 2024). Accurate forecasting of births is therefore useful for
+demographic planning, labour-force planning and future fertility-related policy.
 
-The motivation arises from the exploratory analysis conducted in Part 1, 
-in which an ARIMA(0,1,1) model was selected as the best non-seasonal fit 
-for TLB but produced a flat forecast that systematically underestimated 
-the continued decline observed between 2013 and 2024. A marginal spike at 
-lag 12 was visible in the residual autocorrelation function but not 
-investigated further. Singapore's demographic literature offers a clear 
-hypothesis for this periodicity: years aligned with the Chinese zodiac 
-Dragon experience elevated birth rates within the Chinese-majority 
-population, producing a 12-year cycle that overlays the long-run 
-downward trend.
+Singapore’s fertility decline has occurred despite major policy changes. Chen,
+Yip and Yap (2018) describe Singapore’s shift from anti-natalist policy during
+1965–1986 to pro-natalist policy from 1987 onwards, including the slogan “Three
+or more, if you can afford it”. This was later repackaged as the Marriage and
+Parenthood Package in 2001 and expanded in 2004, 2008, 2013 and 2015 (Chen, Yip
+and Yap, 2018). However, TFR has remained below replacement level. Chen, Yip and
+Yap (2018) argue that one reason for this is that policy incentives have not
+always targeted the groups with the strongest effect on fertility, especially
+single women aged 20–29 and married childless women aged 30–34.
 
+Alongside the long-term decline, Singapore’s birth data may also contain a
+12-year cycle linked to the Chinese zodiac calendar. This is relevant because
+Singapore has a large ethnic Chinese population. In the 2020 Census, 74.3% of
+Singapore residents were Chinese, compared with 13.5% Malay, 9.0% Indian and
+3.2% from other ethnic groups (Singapore Department of Statistics, 2020). Since
+the Dragon is traditionally viewed as an auspicious zodiac sign, some Chinese
+families may prefer to have children in Dragon years, while Tiger years may be
+viewed less favourably. Agarwal et al. (2021) found that Chinese births in
+Singapore increased by about 9.7% in Dragon years and fell by a similar amount
+in Tiger years. Since the zodiac cycle repeats every 12 years, this creates a
+possible periodic pattern in birth data. This effect is expected to be clearer
+in Total Live Births than in TFR because TLB measures actual birth counts, while
+TFR is adjusted for the female population. This provides the main reason for
+testing whether a 12-year seasonal model improves forecasts for Singapore’s
+birth data.
 
-# 2. Literature Review
-
+The motivation for this study is that the 2024 Dragon Year did not follow the
+historical pattern. Instead of producing an obvious increase in births, TLB fell
+to 33,703, the lowest value in the series, while TFR remained at 0.97 (Singapore
+Department of Statistics, 2024). This is important because Singapore has a large
+ethnic Chinese population, and the Dragon Year effect documented by Agarwal et
+al. (2021) was found specifically in Chinese births. Therefore, if this cultural
+timing effect is weakening, a forecasting model that assumes the 12-year pattern
+will continue may overestimate future births. Initial EDA also supported testing
+the zodiac cycle more directly, as the non-seasonal ARIMA(0,1,1) model produced
+a mostly flat TLB forecast and the residual ACF showed a marginal spike at lag
+12. The research question of this report is: does the historical Chinese zodiac
+Dragon Year effect remain a useful forecasting signal for Singapore’s Total Live
+Births and Total Fertility Rate, given that the 2024 Dragon Year produced no
+observable birth boost? To answer this, the report compares SARIMA models with
+an explicit 12-year seasonal period against non-seasonal ARIMA models, using
+residual diagnostics and out-of-sample RMSE to assess model performance.
 
 # 3. Methods
 
 ## 3.1 Data
 
-The data were sourced from the Singapore Department of Statistics 
-(SingStat Table M810091), covering annual observations from 1960 to 2024. 
-The variables used in this analysis are Total Live Births (TLB), the 
-aggregate Total Fertility Rate (TFR), and TFR disaggregated by ethnic 
-group (Chinese, Malay, and Indian). Standard preparation was applied: 
-year order was reversed to chronological, missing values encoded as the 
-string "na" in the source file were converted to `NA`, and the incomplete 
-2025 column was excluded. All series were converted to time series 
-objects with annual frequency for subsequent modelling.
+The analysis used annual observations on Singapore's Total Fertility Rate (TFR,
+in births per female) and Total Live Births (TLB, in counts) for the period 1960
+to 2024. This data was obtained from the Singapore Department of Statistics
+(SingStat Table M810091). The source file was provided in wide format with years
+as columns running from 2025 (left) to 1960 (right), and missing values encoded
+as the string "na". Standard preparation was applied: indented row labels were
+trimmed of leading whitespace, year order was reversed to chronological, missing
+values were converted to R's `NA`, and the incomplete 2025 column was excluded.
 
-## 3.2 Stationarity Testing
+As the purpose of this project is to identify a model and forecast TBL and TFR,
+the data was split into a training set covering 1960 to 2012 (53 observations)
+and a test set covering 2013 to 2024 (12 observations). All models were
+estimated on the training set, and forecast accuracy was evaluated against the
+test set. All modelling was performed in R using the base `stats` package and
+the `tseries` package for stationarity testing.
 
+## 3.2 Transformation and Stationary Testing
+
+Before fitting ARIMA and SARIMA models, the training series needed to be
+transformed into a stationary form. This is important because ARIMA-type models
+assume that the underlying dependence structure of the series is stable over
+time. If a series still contains a strong trend or changing variance, the
+ACF/PACF plots and fitted ARIMA terms can be misleading, as they may reflect the
+trend rather than the actual autocorrelation structure. The raw TFR and TLB
+series both showed clear downward trends, and the variation in the series also
+appeared to change over time. A log transformation was therefore applied first
+to help stabilise the variance before differencing. After this, two possible
+transformation approaches were tested.
+
+Route 1 (seasonal). The first approach used a log transformation, followed by
+seasonal differencing at lag 12 and then first-order regular differencing. The
+lag 12 seasonal difference was used because the Chinese zodiac cycle repeats
+every 12 years, and previous literature has found a Dragon Year effect in
+Singapore births (Agarwal et al., 2021). This route supports SARIMA models of
+the form $(p, 1, q)(P, 1, Q)_{12}$.
+
+Route 2 (non-seasonal). The second approach used a log transformation followed
+by second-order regular differencing. This route does not directly assume a
+12-year zodiac cycle. Instead, it allows non-seasonal ARIMA models of the form
+ARIMA$(p, 2, q)$ to capture any remaining autocorrelation through higher AR or
+MA orders.
+
+The Kwiatkowski–Phillips–Schmidt–Shin (KPSS) test was then used to check whether
+each transformation route had made the series stationary (Kwiatkowski et al.,
+1992). The KPSS test has a null hypothesis that the series is stationary, so a
+p-value below 0.05 was taken as evidence that the series was still
+non-stationary. The full test specification is given in Appendix A.4. The KPSS
+test was applied after each transformation stage for both TFR and TLB, with the
+results shown in Table 1. Both routes achieved stationarity at the 5% level for
+both series. For this reason, both were kept for model testing. This allowed the
+seasonal SARIMA approach to be compared with a non-seasonal ARIMA alternative,
+rather than assuming from the start that the zodiac cycle had to be included.
+
+```{r kpss-table, echo=FALSE}
+kpss_combined <- rbind(kpss_table, kpss_d2)
+knitr::kable(kpss_combined,
+             caption = "KPSS stationarity test results across transformation stages. The null hypothesis is level stationarity; p < 0.05 indicates rejection of stationarity. p-values below 0.01 and above 0.10 are reported at those bounds.",
+             col.names = c("KPSS Statistic", "p-value"),
+             align = "rr")
+```
 
 ## 3.3 Non-seasonal ARIMA Models
 
+A non-seasonal ARIMA$(p,d,q)$ model was used as one way to model the transformed
+TFR and TLB series. The general form of the model is given in Appendix A.1,
+where $p$ is the autoregressive order, $d$ is the differencing order, and $q$ is
+the moving average order.
 
+For the non-seasonal route, the main models tested used $d = 2$, because the
+log-transformed series became stationary after second-order differencing. The
+models ARIMA$(13,2,2)$ and ARIMA$(12,2,3)$ were included to allow the
+non-seasonal model to capture autocorrelation around lag 12 without using an
+explicit seasonal term. Four additional $d = 1$ models were also tested for
+comparison: ARIMA$(0,1,13)$, ARIMA$(13,1,0)$, ARIMA$(0,1,11)$, and
+ARIMA$(12,1,1)$. These were chosen because the ACF/PACF plots suggested
+structure around lag 12, so higher AR or MA orders were needed if seasonality
+was not modelled directly.
 
 ## 3.4 Seasonal ARIMA Models
 
-
+SARIMA models were also tested because the Chinese zodiac cycle repeats every 12
+years. The general SARIMA$(p,d,q)(P,D,Q)_s$ form is given in Appendix A.2. In
+this study, the seasonal period was set as $s = 12$ to represent the possible
+Dragon Year cycle. The SARIMA candidates used $d = 1$ and $D = 1$, based on the
+seasonal transformation route described earlier. Two main seasonal structures
+were tested. The first used a seasonal moving average term at lag 12,
+SARIMA$(p,1,q)(0,1,1){12}$, and the second used a seasonal autoregressive term
+at lag 12, SARIMA$(p,1,q)(1,1,0){12}$. Within these models, the non-seasonal $p$
+and $q$ values were kept small, usually 0 or 1, to avoid making the models too
+complex for the 53-observation training set. One larger seasonal model,
+SARIMA$(1,1,1)(1,1,1)_{12}$, was also included to check whether using both
+seasonal AR and seasonal MA terms improved the fit. All candidate models were
+fitted to the log-transformed training data using the arima() function in R.
+Forecasts were produced on the log scale and then back-transformed using the
+exponential function so that forecast accuracy could be measured on the original
+TFR and TLB scales.
 
 ## 3.5 Residual Diagnostics
 
-
+After fitting each model, the residuals were checked to see whether the model
+had captured the main time-series structure. This was done using the residual
+ACF up to lag 24, a normal Q-Q plot, and the Ljung-Box test. The Ljung-Box test
+was applied at lag 24, with the degrees of freedom adjusted for the number of
+fitted model parameters. The test checks whether the residual autocorrelations
+are jointly equal to zero. A model was treated as viable if the Ljung-Box
+p-value was greater than 0.05, meaning there was not enough evidence of
+remaining autocorrelation in the residuals.Models that failed the Ljung-Box test
+were excluded from the forecast comparison. This was done because a low AIC or
+RMSE is not enough if the residuals still contain clear autocorrelation. In that
+case, the model has not fully captured the structure in the series.
 
 ## 3.6 Forecast Evaluation
 
+Each viable model was used to forecast the 2013–2024 test period. Forecast
+accuracy was measured using RMSE on the original scale, so TFR errors were
+measured in births per woman and TLB errors were measured in number of births.
+AIC and AICc were also reported to compare in-sample fit, but they were not used
+as the final selection criterion. AICc was included because the training sample
+only contained 53 observations, and some of the candidate models had a
+relatively large number of parameters.
+
+Prediction intervals were also calculated for each forecast. The 80% and 95%
+intervals were first constructed on the log scale using the forecast standard
+errors from arima(), then back-transformed to the original scale. These
+intervals were included in the forecast plots to show the uncertainty around
+each model’s point forecasts. The final model for each series was chosen as the
+viable model with the lowest test-set RMSE. This meant that models first had to
+pass the residual white-noise check, and were then ranked based on out-of-sample
+forecast accuracy.
 
 # 4. Results
 
+## 4.1 Series Behaviour
 
+Figures 1 and 2 show Singapore’s TFR and TLB from 1960 to 2024. Dragon years are
+marked with red circles and Tiger years with blue triangles. The vertical dashed
+line at 2012 separates the training data from the 2013–2024 test period.
+
+```{r fig1, echo=FALSE, out.width="100%", fig.cap="Singapore Total Fertility Rate, 1960-2024. Red circles mark Chinese zodiac Dragon years; blue triangles mark Tiger years. The dashed vertical line at 2012 marks the train/test boundary."}
+knitr::include_graphics("figures/fig1_tfr_raw.png")
+```
+
+```{r fig2, echo=FALSE, out.width="100%", fig.cap="Singapore Total Live Births, 1960-2024. Red circles mark Chinese zodiac Dragon years; blue triangles mark Tiger years. The dashed vertical line at 2012 marks the train/test boundary."}
+knitr::include_graphics("figures/fig2_tlb_raw.png")
+```
+
+Both series show a clear long-term decline. TFR fell from about 5.76 in 1960 to
+0.97 in 2024, while TLB fell from about 61,700 births to 33,700 births over the
+same period. The decline was steepest from 1960 to the early 1980s. After this,
+both series became more stable, although they still continued to trend downward.
+
+The Dragon-Tiger pattern is easier to see in TLB than in TFR. Several Dragon
+years line up with local increases in births, especially 1988 and 2000. For
+example, the 1988 Dragon year had about 53,000 births, compared with about
+38,000 births in the nearby Tiger years of 1986 and 1998. Tiger years also tend
+to line up with local lows in the birth count. However, 2024 does not follow
+this earlier pattern. Even though 2024 was a Dragon year, TLB fell to 33,703,
+the lowest value in the series, with no clear Dragon-year increase. The pattern
+is less obvious in TFR. This makes sense because TFR is a rate adjusted for the
+female population, while the zodiac effect is expected to affect the actual
+number of births more directly. This is why the Dragon Year effect is expected
+to be more visible in TLB than in TFR.
+
+## 4.2 Transformations and Stationarity  
+
+Both raw series were non-stationary based on the KPSS test. For TFR, the KPSS
+statistic was 1.0706 with $p = 0.0100$, and for TLB the statistic was 0.6236
+with $p = 0.0205$. Since both $p$-values were below 0.05, level stationarity was
+rejected for both series, as shown in Table 1. Applying the log transformation
+by itself did not make either series stationary. Figures 3 and 4 show the
+transformation process for TFR and TLB, starting with the raw series, then the
+log-transformed series, then the series after seasonal differencing at lag 12,
+and finally after first-order regular differencing.
+
+```{r fig3, echo=FALSE, out.width="100%", fig.cap="TFR transformation stages. Top left: raw TFR (training). Top right: log-transformed TFR. Bottom left: log(TFR) after seasonal differencing at lag 12. Bottom right: log(TFR) after seasonal and first-order regular differencing."}
+knitr::include_graphics("figures/fig5_tfr_transformations.png")
+```
+
+```{r fig4, echo=FALSE, out.width="100%", fig.cap="TLB transformation stages. Top left: raw TLB (training). Top right: log-transformed TLB. Bottom left: log(TLB) after seasonal differencing at lag 12. Bottom right: log(TLB) after seasonal and first-order regular differencing."}
+knitr::include_graphics("figures/fig6_tlb_transformations.png")
+```
+
+The final panels in Figures 3 and 4 show that the transformed series behave much
+more like stationary series. After both seasonal and regular differencing, the
+values fluctuate around zero, with no clear trend or obvious change in variance.
+This was also supported by the KPSS results, with $p \geq 0.10$ for both final
+transformed series. The KPSS statistics were 0.1360 for TFR and 0.1227 for TLB.
+The alternative non-seasonal route, using a log transformation followed by
+second-order regular differencing, also achieved stationarity for both series
+with $p \geq 0.10$. Therefore, both transformation routes were considered
+suitable for model fitting.
+
+## 4.3 Model Identification
+
+To choose the candidate model orders, the ACF and PACF were calculated for the
+log-transformed and first-differenced TFR and TLB series. The plots were checked
+up to lag 36 so that three full 12-year zodiac cycles could be inspected. These
+plots are shown in Figures 5 and 6.
+
+```{r fig5, echo=FALSE, out.width="100%", fig.cap="ACF (left) and PACF (right) of log-transformed TFR after first-order regular differencing, training period 1960-2012. Dashed blue lines indicate $\\pm 2/\\sqrt{n}$ significance bounds."}
+knitr::include_graphics("figures/fig7_tfr_acf_pacf_first_diff.png")
+```
+
+```{r fig6, echo=FALSE, out.width="100%", fig.cap="ACF (left) and PACF (right) of log-transformed TLB after first-order regular differencing, training period 1960-2012. Dashed blue lines indicate $\\pm 2/\\sqrt{n}$ significance bounds."}
+knitr::include_graphics("figures/fig8_tlb_acf_pacf_first_diff.png")
+```
+
+For both series, the main feature is a clear positive spike at lag 12 in the ACF
+and PACF. The spike is approximately 0.34 for TFR and 0.37 for TLB, which is
+above the significance bound of $\pm 0.273$. This suggests that there is still
+important structure at the 12-year lag after first differencing. The PACF also
+shows a negative spike at lag 13 for both series, which further supports the
+possibility of a 12-year pattern. Based on this, two types of candidate models
+were tested. The first group used SARIMA models with an explicit seasonal term
+at lag 12, so the zodiac cycle was modelled directly. The second group used
+higher-order non-seasonal ARIMA models, where the AR or MA order was large
+enough to capture structure around lag 12 without adding a seasonal term. This
+allowed the seasonal and non-seasonal approaches to be compared rather than
+assuming that the zodiac effect had to be included.
+
+## 4.4 Fitted Models and Diagnostics
+
+Thirteen candidate models were fitted for each series. Tables 2 and 3 compare
+the models for TFR and TLB, using AIC, AICc, the Ljung-Box $p$-value, viability
+status and test-set RMSE.
+
+```{r tfr-table, echo=FALSE}
+knitr::kable(tfr_table,
+             caption = "TFR candidate model comparison. Viability is determined by the Ljung-Box test on residuals at lag 24 (p > 0.05). RMSE is computed on the 2013-2024 test set after back-transformation from the log scale.",
+             align = "lrrrlr")
+```
+
+```{r tlb-table, echo=FALSE}
+knitr::kable(tlb_table,
+             caption = "TLB candidate model comparison. Viability is determined by the Ljung-Box test on residuals at lag 24 (p > 0.05). RMSE is computed on the 2013-2024 test set after back-transformation from the log scale.",
+             align = "lrrrlr")
+```
+
+For TFR, nine of the thirteen models passed the Ljung-Box white-noise check. The
+non-seasonal $d = 1$ models did not perform well, with all four producing
+residuals that still had significant autocorrelation. Their Ljung-Box $p$-values
+ranged from 0.0042 to 0.0231, so they were excluded from the final forecast
+comparison. ARIMA$(12,1,1)$ also failed to converge during model fitting. The
+viable TFR models were therefore the two $d = 2$ ARIMA models and the seven
+SARIMA models. The best viable model was ARIMA$(13,2,2)$, with RMSE 0.0862. The
+best SARIMA model, SARIMA$(1,1,1)(1,1,0)_{12}$, was close behind with RMSE
+0.0965.
+
+For TLB, seven of the thirteen models passed the Ljung-Box white-noise check.
+Three of the four $d = 1$ non-seasonal models failed the Ljung-Box test, while
+ARIMA$(0,1,13)$ passed and was kept for comparison. ARIMA$(13,2,2)$ also passed,
+although its Ljung-Box $p$-value of 0.0928 was relatively close to the 5%
+threshold. Two SARIMA models with seasonal AR terms failed the white-noise
+check. The best viable TLB model was SARIMA$(1,1,1)(0,1,1)_{12}$, with RMSE
+2,730. This was much better than the best viable non-seasonal
+model, ARIMA$(0,1,13)$, which had RMSE 6,386. Residual
+diagnostics for the selected TFR and TLB models are shown in Figures 7 and 8.
+
+```{r fig7, echo=FALSE, out.width="100%", fig.cap="Residual diagnostics for the best viable TFR model, ARIMA(13,2,2). Left: residual ACF up to lag 24 with significance bounds. Right: normal Q-Q plot."}
+knitr::include_graphics("figures/fig5_tfr_residuals.png")
+```
+
+```{r fig8, echo=FALSE, out.width="100%", fig.cap="Residual diagnostics for the best viable TLB model, SARIMA(1,1,1)(0,1,1)[12]. Left: residual ACF up to lag 24 with significance bounds. Right: normal Q-Q plot."}
+knitr::include_graphics("figures/fig6_tlb_residuals.png")
+```
+
+The TFR residual diagnostics look good overall. The residual ACF does not show
+any significant autocorrelation, and the Q-Q plot stays close to the reference
+line, with only small differences in the tails. This suggests that
+ARIMA$(13,2,2)$ has captured the main structure in the TFR series. The TLB
+residual diagnostics are slightly weaker. The residual ACF shows a borderline
+negative spike around lag 4, and the Q-Q plot has some mild departures from
+normality in the tails. However, the Ljung-Box test still does not reject the
+white-noise assumption at the 5% level. This suggests that
+SARIMA$(1,1,1)(0,1,1)_{12}$ captures most of the autocorrelation in the TLB
+series, although some minor residual structure may still remain.
+
+## 4.5 Forecast Performance
+
+The selected models were evaluated by comparing their forecasts with the actual
+2013--2024 test data. This makes it possible to see how closely the models
+followed the observed values, especially around the 2024 Dragon Year. Figures 9
+and 10 show the forecasts for TFR and TLB, with the 80% and 95% prediction
+intervals included.
+
+```{r fig9, echo=FALSE, out.width="100%", fig.cap="TFR forecast for 2013-2024 from ARIMA(13,2,2). Black line: training data. Grey line: actual test data. Red dashed line: point forecast. Shaded bands: 80% (darker) and 95% (lighter) prediction intervals."}
+knitr::include_graphics("figures/fig7_tfr_forecast.png")
+```
+
+```{r fig10, echo=FALSE, out.width="100%", fig.cap="TLB forecast for 2013-2024 from SARIMA(1,1,1)(0,1,1)[12]. Black line: training data. Grey line: actual test data. Red dashed line: point forecast. Shaded bands: 80% (darker) and 95% (lighter) prediction intervals."}
+knitr::include_graphics("figures/fig8_tlb_forecast.png")
+```
+
+The TFR forecast in Figure 9 follows the actual 2013--2024 test data fairly
+closely. The point forecast stays within about 0.10 of the observed TFR values
+across the test period, and all twelve actual observations fall inside the 95%
+prediction interval. This suggests that ARIMA$(13,2,2)$ captures both the
+continued downward trend and the size of the decline reasonably well.
+
+The TLB forecast in Figure 10 is less straightforward. From 2013 to 2022, the
+point forecast generally underpredicts the actual number of births by about
+1,500--3,000 births per year, although the actual values still fall within the
+95% prediction interval. In 2024, the SARIMA model forecasts an increase because
+it carries forward the historical 12-year Dragon Year pattern. However, the
+actual 2024 value was 33,703, which was the lowest value in the full series.
+This means the model expected some Dragon Year increase, but this did not occur
+in the observed data. Even so, the actual value still remained inside the wider
+95% prediction interval. 
+
+The seasonal model performed much better for TLB. SARIMA$(1,1,1)(0,1,1)_{12}$
+had a test-set RMSE of 2,730, compared with 6,386 for the best viable
+non-seasonal model. This is a reduction of about 57%. For TFR, the result was
+different. The non-seasonal ARIMA$(13,2,2)$ model had the lowest RMSE of 0.0862,
+while the best SARIMA model had RMSE 0.0965. This means the seasonal structure
+helped much more for TLB than for TFR.
 
 # 5. Discussion
 
+The results answer the research question in a mixed way. The 12-year zodiac
+structure improved forecasts for Total Live Births, but it did not improve
+forecasts for Total Fertility Rate. For TLB, the selected
+SARIMA$(1,1,1)(0,1,1)_{12}$ model had a much lower RMSE than the best viable
+non-seasonal model, showing that the seasonal structure added useful
+information. For TFR, the best model was instead ARIMA$(13,2,2)$, with the
+SARIMA alternatives performing slightly worse. This suggests that the Dragon
+Year effect is more useful for forecasting birth counts than fertility rates.
 
+This difference is reasonable because the zodiac effect is mainly a timing
+effect in actual births. Agarwal et al. (2021) found that Chinese births in
+Singapore increased in Dragon years, so the effect should appear more directly
+in TLB. TFR is adjusted for the female population, so the same birth timing
+effect is less visible once converted into a rate. This explains why the
+seasonal model helped TLB but did not clearly improve TFR. The 2024 result is
+the most important qualification to this finding. Figure 10 shows that the
+selected TLB model carried the historical Dragon Year pattern forward and
+expected an increase in 2024. Instead, actual TLB fell to 33,703, the lowest
+value in the series. The actual value was still inside the 95% prediction
+interval, so the model allowed for uncertainty, but the point forecast was wrong
+in direction. This suggests that the historical Dragon Year pattern was present
+in the training data, but may not be as reliable in the most recent period.
+
+There are also limitations in the modelling. First, although the selected TLB
+model passed the Ljung-Box test, the residual diagnostics in Figure 8 still show
+some minor remaining structure. This means the model captured most of the
+autocorrelation, but not all of it. Second, the training set only had 53
+observations, which limits how complex the models can be before overfitting
+becomes a risk. Third, the analysis is univariate, so it does not include other
+fertility drivers such as housing costs, labour market conditions, migration, or
+policy changes. This matters because Chen, Yip and Yap (2018) show that
+Singapore’s fertility is affected by policy design and demographic subgroups,
+not only by past birth patterns.
+
+Overall, the results suggest that the Dragon Year cycle is useful for explaining
+historical variation in TLB, but it should not be treated as a permanent
+forecasting rule. A SARIMA model trained on older data can capture the past
+cycle, but may overestimate future births if the cultural behaviour behind the
+effect weakens. Future work could test models with policy, economic or
+demographic variables, or use rolling forecasts so that recent changes,
+including the weak 2024 Dragon Year effect, have more influence on future
+predictions.
 
 # 6. Conclusion
 
-
+This study tested whether the Chinese zodiac Dragon Year effect is still useful
+for forecasting Singapore’s Total Live Births and Total Fertility Rate. Thirteen
+ARIMA and SARIMA models were fitted for each series using the 1960--2012
+training data and then tested against the 2013--2024 observations. Models first
+had to pass the Ljung-Box white-noise check before being compared using test-set
+RMSE. The results were different for the two series. For TLB, the best model was
+SARIMA$(1,1,1)(0,1,1)_{12}$, with an RMSE of 2,730, compared with 6,386 for the
+best viable non-seasonal model. This shows that the 12-year seasonal structure
+helped forecast total birth counts. For TFR, the best model was ARIMA$(13,2,2)$,
+with RMSE 0.0862 compared with 0.0965 for the best SARIMA model. This suggests
+that the zodiac cycle is less useful once births are expressed as a fertility
+rate rather than as an absolute count. The main caution is the 2024 result.
+Although the seasonal TLB model captured the historical Dragon Year pattern, its
+2024 point forecast expected an increase that did not occur. Actual TLB instead
+fell to 33,703, although Figure 10 shows it still appears to fall within the
+wider 95% prediction interval. Overall, the Dragon Year effect appears useful
+for modelling historical TLB, but it should not be treated as a fixed pattern
+that will always continue. Future work could improve the analysis by including
+policy, economic or demographic variables, or by using forecasting methods that
+give more weight to recent data.
 
 # References
 
+Agarwal, S., Qian, W., Sing, T. F. and Tan, P. (2021). Fortunes of the Dragons:
+Cohort effects of zodiac superstitions on educational investments. *Journal of
+Development Economics*, 152, 102696.
 
+Chen, M., Yip, P. S. F. and Yap, M. T. (2018). Identifying the most influential
+groups in determining Singapore's fertility. *Journal of Social Policy*, 47(1),
+139--160. doi:10.1017/S0047279417000241
 
-\newpage
+Kwiatkowski, D., Phillips, P. C. B., Schmidt, P. and Shin, Y. (1992). Testing
+the null hypothesis of stationarity against the alternative of a unit root: How
+sure are we that economic time series have a unit root? *Journal of
+Econometrics*, 54(1--3), 159--178.
+
+Ljung, G. M. and Box, G. E. P. (1978). On a measure of lack of fit in time
+series models. *Biometrika*, 65(2), 297--303.
+
+Ministry of Manpower. (2025). *Labour Force in Singapore 2024*. Available at: https://stats.mom.gov.sg/Pages/Labour-Force-In-Singapore-2024.aspx
+
+National Population and Talent Division. (2025). *Longevity*. Available at: https://www.population.gov.sg/our-population/population-trends/longevity/
+
+Shair, S. N., Shaadan, N., Amirudin, N. A. B. M. and A'kashalf, N. A. M. (2024).
+Predictions of Malaysia age-specific fertility rates using the Lee-Carter and
+the functional data approaches. *AIUB Journal of Science and Engineering*,
+23(1), 71--78. doi:10.53799/ajse.v23i1.1024
+
+Singapore Department of Statistics. (2020). *Census of Population 2020
+Statistical Release 1: Demographic Characteristics, Education, Language and
+Religion*. Singapore Department of Statistics.
+
+Singapore Department of Statistics. (2024). *Table M810091: Births and Fertility
+Rates, Annual*. SingStat Table Builder. Available at:
+https://tablebuilder.singstat.gov.sg/
+
+Vanella, P. (2024). The total fertility rate in Germany until 2040: A stochastic
+principal components projection based on age-specific fertility rates. *Hannover
+Economic Papers*, 579. \newpage
 
 # Statistical Appendix
 
-## A.1 ARIMA(p, d, q) Model
+## A.1 ARIMA$(p, d, q)$ Model
 
-An ARIMA(p, d, q) model applied to a time series $x_t$ is defined as:
+An ARIMA$(p, d, q)$ model applied to a time series $x_t$ is written as
 
-$$\phi(B) \, \nabla^d x_t = \theta(B) \, w_t$$
+$$
+\phi(B)\nabla^d x_t = \theta(B)w_t
+$$
 
-where $B$ is the backshift operator ($B x_t = x_{t-1}$), 
-$\nabla^d = (1 - B)^d$ is the differencing operator of order $d$, 
-$\phi(B) = 1 - \phi_1 B - \cdots - \phi_p B^p$ is the autoregressive 
-polynomial, $\theta(B) = 1 + \theta_1 B + \cdots + \theta_q B^q$ is the 
-moving average polynomial, and $w_t \sim N(0, \sigma^2)$ is white noise.
+where $B$ is the backshift operator, so that $Bx_t = x_{t-1}$, and $\nabla^d = (1 - B)^d$ is the differencing operator of order $d$. The autoregressive polynomial is
 
-## A.2 Seasonal ARIMA Model
+$$
+\phi(B) = 1 - \phi_1B - \phi_2B^2 - \cdots - \phi_pB^p,
+$$
 
-The seasonal extension SARIMA$(p, d, q)(P, D, Q)_s$ adds seasonal AR, 
-differencing, and MA terms at lag $s$:
+and the moving average polynomial is
 
-$$\Phi(B^s) \, \phi(B) \, \nabla_s^D \, \nabla^d x_t = \Theta(B^s) \, \theta(B) \, w_t$$
+$$
+\theta(B) = 1 + \theta_1B + \theta_2B^2 + \cdots + \theta_qB^q.
+$$
 
-where $\Phi$ and $\Theta$ are the seasonal AR and MA polynomials in $B^s$, 
-and $\nabla_s = 1 - B^s$ is the seasonal differencing operator. For this 
-study, $s = 12$ to reflect the proposed Dragon Year periodicity.
+Here, $p$ is the autoregressive order, $d$ is the differencing order, $q$ is the moving average order, and $w_t$ is a white noise error term, usually written as $w_t \sim N(0,\sigma^2)$.
+
+## A.2 Seasonal ARIMA (SARIMA) Model
+
+A SARIMA$(p,d,q)(P,D,Q)_s$ model extends ARIMA by adding seasonal autoregressive, differencing, and moving average terms at seasonal lag $s$:
+
+$$
+\Phi(B^s)\phi(B)\nabla_s^D\nabla^d x_t = \Theta(B^s)\theta(B)w_t
+$$
+
+where $\Phi(B^s)$ is the seasonal autoregressive polynomial, $\Theta(B^s)$ is the seasonal moving average polynomial, and
+
+$$
+\nabla_s^D = (1 - B^s)^D
+$$
+
+is the seasonal differencing operator. In this study, $s = 12$ was used to represent the proposed 12-year Chinese zodiac cycle.
 
 ## A.3 Autocorrelation and Partial Autocorrelation Functions
 
 The sample autocorrelation at lag $k$ is
 
-$$r_k = \frac{\sum_{t=k+1}^{n} (x_t - \bar{x})(x_{t-k} - \bar{x})}{\sum_{t=1}^{n} (x_t - \bar{x})^2}$$
+$$
+r_k = \frac{\sum_{t=k+1}^{n}(x_t - \bar{x})(x_{t-k} - \bar{x})}{\sum_{t=1}^{n}(x_t - \bar{x})^2}.
+$$
 
-Significance bounds under $H_0: \rho_k = 0$ are plotted at $\pm 2/\sqrt{n}$. 
-The partial autocorrelation at lag $k$ measures the correlation between 
-$x_t$ and $x_{t-k}$ after removing the linear effects of intermediate 
-observations.
+Approximate significance bounds under $H_0: \rho_k = 0$ are plotted at
+
+$$
+\pm \frac{2}{\sqrt{n}}.
+$$
+
+The partial autocorrelation at lag $k$ measures the correlation between $x_t$ and $x_{t-k}$ after removing the linear effects of the observations in between.
 
 ## A.4 KPSS Test for Stationarity
 
-The Kwiatkowski–Phillips–Schmidt–Shin test takes the null hypothesis that 
-the series is (level- or trend-) stationary. A rejection of $H_0$ at the 
-chosen significance level indicates non-stationarity requiring 
-transformation or differencing.
+The Kwiatkowski--Phillips--Schmidt--Shin (KPSS) test was used to check stationarity (Kwiatkowski et al., 1992). The null hypothesis is that the series is stationary, while the alternative is that the series is non-stationary. Therefore, a $p$-value below 0.05 was treated as evidence that the series was still non-stationary and required further transformation or differencing. In this study, the KPSS test was applied using the level stationarity null hypothesis.
 
 ## A.5 Ljung-Box Test for White Noise Residuals
 
-The Ljung-Box statistic tests the joint null that the first $h$ 
-autocorrelations of the residuals are zero:
+The Ljung-Box test was used to check whether the residuals from each fitted model behaved like white noise. The test statistic is
 
-$$Q = n(n+2) \sum_{k=1}^{h} \frac{\hat{r}_k^2}{n-k}$$
+$$
+Q = n(n+2)\sum_{k=1}^{h}\frac{\hat{r}_k^2}{n-k},
+$$
 
-Under $H_0$, $Q$ follows a $\chi^2$ distribution with $h - p - q$ 
-degrees of freedom for an ARIMA$(p, d, q)$ model. Failure to reject 
-$H_0$ provides evidence that residuals behave as white noise.
+where $n$ is the sample size, $h$ is the number of lags tested, and $\hat{r}_k$ is the residual autocorrelation at lag $k$.
 
-## A.6 Akaike Information Criterion
+The null hypothesis is that the first $h$ residual autocorrelations are jointly equal to zero. For an ARIMA$(p,d,q)$ model, the degrees of freedom are adjusted by the fitted AR and MA parameters, giving approximately $h - p - q$. For SARIMA models, the seasonal AR and MA parameters are also included, giving approximately
 
-$$\mathrm{AIC} = -2 \log L + 2k$$
+$$
+h - (p + q + P + Q).
+$$
 
-where $L$ is the maximised likelihood and $k$ is the number of estimated 
-parameters. Lower AIC values indicate a better trade-off between model 
-fit and complexity.
+In this study, the Ljung-Box test was applied at lag $h = 24$, and models were treated as viable if the Ljung-Box $p$-value was greater than 0.05.
 
-## A.7 Forecast Accuracy Metrics
+## A.6 Akaike Information Criterion and AICc
 
-Root Mean Squared Error and Mean Absolute Percentage Error are used to 
-compare forecast performance on the test period (2013-2024):
+The Akaike Information Criterion is defined as
 
-$$\mathrm{RMSE} = \sqrt{\frac{1}{h} \sum_{t=1}^{h} (y_t - \hat{y}_t)^2}
-\qquad
-\mathrm{MAPE} = \frac{100}{h} \sum_{t=1}^{h} \left| \frac{y_t - \hat{y}_t}{y_t} \right|$$
+$$
+\mathrm{AIC} = -2\log L + 2k,
+$$
 
-where $y_t$ is the observed value and $\hat{y}_t$ is the forecast at 
-horizon $t$, with $h = 12$ here.
+where $L$ is the maximised likelihood and $k$ is the number of estimated parameters. Lower AIC values indicate a better balance between model fit and model complexity.
+
+The corrected AIC, or AICc, is used for smaller samples and is defined as
+
+$$
+\mathrm{AICc} = \mathrm{AIC} + \frac{2k(k+1)}{n-k-1},
+$$
+
+where $n$ is the training sample size. AICc was reported because the training set only contained 53 observations, and some candidate models had relatively high parameter counts.
+
+## A.7 Forecast Accuracy Metric
+
+Root Mean Squared Error was used to compare forecast accuracy over the 2013--2024 test period:
+
+$$
+\mathrm{RMSE} = \sqrt{\frac{1}{h}\sum_{t=1}^{h}(y_t - \hat{y}_t)^2},
+$$
+
+where $y_t$ is the observed value, $\hat{y}_t$ is the forecast value, and $h = 12$ is the forecast horizon. RMSE is useful because it is reported in the same units as the original data.
+
+## A.8 Prediction Intervals
+
+Prediction intervals were constructed on the log scale using the forecast standard errors returned by the fitted model:
+
+$$
+\hat{y}_t^{\log} \pm z\cdot \mathrm{SE}(\hat{y}_t^{\log}).
+$$
+
+The 80% and 95% prediction intervals used the normal critical values $z = 1.282$ and $z = 1.960$, respectively. The upper and lower bounds were then back-transformed to the original scale using the exponential function. 
