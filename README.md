@@ -11,7 +11,7 @@ Adelaide University
 ## Project Overview
 Singapore's TFR and TLB have declined substantially since 1960. At the same time, previous research has found that Chinese births in Singapore have historically increased in Dragon years and decreased in Tiger years. Since the Chinese zodiac cycle repeats every 12 years, this project tests whether a 12-year seasonal structure improves forecasts.
 
-The analysis compares non-seasonal ARIMA models against SARIMA models with a 12-year seasonal period. Models are fitted on the 1960--2012 training period and evaluated on the 2013--2024 test period. Model viability is checked using the Ljung-Box test, and forecast accuracy is compared using RMSE.
+The analysis compares non-seasonal ARIMA models against SARIMA models with a 12-year seasonal period. Models are fitted on the 1960-2012 training period and evaluated on the 2013-2024 test period. Model viability is checked using the Ljung-Box test, and forecast accuracy is compared using RMSE.
 
 ## Research Question
 
